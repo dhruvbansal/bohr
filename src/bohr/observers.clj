@@ -27,25 +27,27 @@
 (defn get-observer
   "Return the observer of the given `name`.  If `option` is provided,
   return the observer's matching option instead."
-  [name option]
-  (if (known-observer? name)
-    (let [observer (get @observers name)]
-      (if option
-        (get observer option)
-        observer))
-    (throw
-     (ex-info
-      (format "No such observer '%s'" name)
-      {:bohr true :type :bohr-no-such-observer-exception}))))
+  ([name]
+   (get-observer name nil))
+  ([name option]
+   (if (known-observer? name)
+     (let [observer (get @observers name)]
+       (if option
+         (get observer option)
+         observer))
+     (throw
+      (ex-info
+       (format "No such observer '%s'" name)
+       {:bohr true :type :bohr-no-such-observer-exception})))))
 
 (def observer-depends-on (atom {}))
 
-(def ^{:private true} observer-has-dependents (atom {}))
+(def observer-has-dependents (atom {}))
 
 (defn- prevent-circular-dependencies! [dependencies dependency-chain]
   (doseq [dependency dependencies]
     (let [extended-dependency-chain (conj dependency-chain dependency)]
-      (if (== dependency (nth dependency-chain 0))
+      (if (= dependency (first dependency-chain))
         (throw (ex-info
                 (format "Circular dependency among observers: %s" extended-dependency-chain)
                 {:bohr true :type :bohr-circular-dependency-exception
@@ -62,10 +64,10 @@
   (let [new-options (assoc options :instructions instructions)]
     (swap! observers assoc name new-options))
   (swap! observer-depends-on assoc name dependencies)
-  (for [dependency dependencies]
+  (doseq [dependency dependencies]
     (let [current-dependents (get @observer-has-dependents dependency [])
           new-dependents     (conj current-dependents name)]
-      (swap! observer-has-dependents assoc dependency current-dependents))))
+      (swap! observer-has-dependents assoc dependency new-dependents))))
 
 (defn check-undefined-dependencies! []
   (doseq [[observer dependencies] (seq @observer-depends-on)]
@@ -83,7 +85,7 @@
   "Make an observation."
   [name]
   ;; FIXME add error handling here...
-  (log/trace "Observing" name)
+  (log/debug "Observing" name)
   ((get-observer name :instructions)))
 
 (defn for-each-observer

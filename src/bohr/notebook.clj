@@ -4,8 +4,7 @@
 ;;;; `atom`).
 
 (ns bohr.notebook
-  (:require [clj-time.core :as time]
-            [clojure.tools.logging :as log]))
+  (:require [clojure.tools.logging :as log]))
 
 (def ^{:private true} atomic-symbols (atom {}))
 

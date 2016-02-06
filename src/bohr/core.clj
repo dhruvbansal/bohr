@@ -9,17 +9,34 @@
    bohr.cli
    )
   (:gen-class))
+
+(defn- force-get-reading! [name]
+  (if (known-reading? name) (get-reading name)
+      (do
+        (take-reading! name (observe name))
+        (get-reading name))))
+
+(defn- refresh-reading! [name]
+  (take-reading! name (observe name))
+  (doseq [dependent (get @observer-has-dependents name [])]
+    (refresh-reading! dependent)))
   
 (defn- populate! [runtime-options]
   (read-inputs! (get runtime-options :input))
   (if (not (observers?)) (log/warn "No observations defined!"))
   (check-undefined-dependencies!))
 
-(def pool (mk-pool))
+(defn submit-in-observer!
+  "Submit the metric from within the context of the given observer."
+  [observer-name name value options]
+  (submit-with-observer! (get-observer observer-name) name value options)
+  nil)
   
 (defn- start! [runtime-options]
   (log/debug "Taking initial readings...")
   (for-each-observer (fn [name _] (take-reading! name (observe name)))))
+
+(def pool (mk-pool))
 
 (defn- periodically-observe! []
   (map-periodic-observers
@@ -27,15 +44,19 @@
      (let [ttl-in-ms (* 1000 (get observer :ttl))]
        (every
         ttl-in-ms
-        #(take-reading! name (observe name))
+        #(refresh-reading! name)
         pool
         :initial-delay ttl-in-ms)))))
 
 (defn- loop! [runtime-options]
-  (log/debug "Setting up observer schedule!")
+  (log/debug "Entering main loop!")
   (let [schedules (periodically-observe!)]
     (try
-      (log/info "Bohr is now running")
+      ;; For some reason, this `doseq' block must be here in order for
+      ;; the timers to run...perhaps because they need to be
+      ;; explicitly mentioned somewhere or the compiler will just
+      ;; optimize them out?
+      (doseq [schedule schedules] schedule)
       (catch clojure.lang.ExceptionInfo e
         (doseq [schedule schedules] (stop schedule))
         (throw e)))))
