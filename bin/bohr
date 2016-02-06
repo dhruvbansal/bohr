@@ -1,0 +1,8 @@
+#!/bin/sh
+
+BIN_DIR=`dirname $0`
+BOHR_HOME=`dirname ${BIN_DIR}`
+BOHR_VERSION="0.1.0-SNAPSHOT"
+
+cd "$BOHR_HOME"
+exec java -jar "target/uberjar/bohr-${BOHR_VERSION}-standalone.jar" "$@"
