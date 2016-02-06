@@ -5,7 +5,11 @@
 
 (defn set-bohr-logger! [runtime-options]
   (let [default-log-level (get runtime-options :log-level)
-        log-level (if (get runtime-options :verbose) :debug default-log-level)]
+        verbosity         (get runtime-options :verbose)
+        log-level (cond
+                    (or (nil? verbosity) (= 0 verbosity)) default-log-level
+                    (=  1 verbosity) :debug
+                    (<= 2 verbosity) :trace)]
     (set-loggers!
-     ["bohr.core" "bohr.cli" "bohr.dsl" "bohr.inputs"]
+     ["bohr.core" "bohr.cli" "bohr.dsl" "bohr.inputs" "bohr.notebook" "bohr.observers"]
      {:pattern (get runtime-options :log-pattern) :level log-level} )))

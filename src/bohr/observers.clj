@@ -10,7 +10,8 @@
 ;;;; Undefined dependencies should be checked for once all observers
 ;;;; are defined but have not started taking readings.
 
-(ns bohr.observers)
+(ns bohr.observers
+  (:require [clojure.tools.logging :as log]))
 
 (def ^{:private true} observers (atom {}))
 
@@ -56,6 +57,7 @@
 (defn define-observer!
   "Define a new observer."
   [name options instructions dependencies]
+  (log/trace "Defining observer" name "with options" options "and dependencies" dependencies)
   (prevent-circular-dependencies! dependencies (vector name))
   (let [new-options (assoc options :instructions instructions)]
     (swap! observers assoc name new-options))
@@ -81,17 +83,18 @@
   "Make an observation."
   [name]
   ;; FIXME add error handling here...
-  (apply (get-observer name :instructions)))
+  (log/trace "Observing" name)
+  ((get-observer name :instructions)))
 
 (defn for-each-observer
   "Iterate over all observers."
   [f]
   (doseq [[name observer] @observers]
-    (apply f name observer)))
+    (f name observer)))
 
 (defn map-periodic-observers
   "Map over all periodic observers."
   [f]
   (map
-   (filter @observers (fn [observer] (get observer :ttl)))
-   f))
+   f
+   (filter (fn [[_ observer]] (get observer :ttl)) (seq @observers))))

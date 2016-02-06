@@ -5,7 +5,14 @@
 
 (defn- read-input! [file]
   (log/debug "Loading Bohr input at" (.getPath file))
-  (dsl! (slurp file)))
+  (try
+    (dsl-eval-string! (slurp file))
+    (catch clojure.lang.ExceptionInfo e
+      (if (-> e ex-data :bohr)
+        (throw
+         (ex-info
+          (format "(in %s) %s" (.getPath file) (.getMessage e))
+          (ex-data e)))))))
 
 (defn read-inputs! [input-path]
   (if input-path

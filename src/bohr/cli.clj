@@ -8,10 +8,11 @@
 
 (def  ^{:private true} cli-parser-options
   [
-   ["-h" "--help" "Print this help" :default false]
+   ["-h" "--help"       "Print this help"                          :default false]
    ["-i" "--input PATH" "Input path(s) to read"]
-   ["-d" "--daemon" "Run continuously" :default false]
-   ["-v" "--verbose" "Print DEBUG statements" :default false]
+   ["-d" "--daemon"     "Run continuously"                         :default false]
+   ["-v" "--verbose"    "Log DEBUG statements (repeat for TRACE)." :default 0
+    :assoc-fn  (fn [m k _] (update-in m [k] inc))]
    ])
 
 (defn- usage [options-summary]
@@ -45,7 +46,7 @@ reports till he dies.  Silly guy."
 
 (defn parse-cli [cli-args]
   (let [{:keys [options arguments errors summary]} (parse-opts cli-args cli-parser-options)
-        runtime-options (merge options default-cli-options default-log-options)]
+        runtime-options (merge default-log-options default-cli-options options)]
     ;; set logger here b/c we can use it for errors
     (set-bohr-logger! runtime-options)
     (cond
