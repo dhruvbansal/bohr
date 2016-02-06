@@ -1,24 +1,27 @@
 (ns bohr.dsl
-  (:require [clojure.tools.logging :as log]))
+  (:require [clojure.tools.logging :as log])
+  (:use bohr.notebook)
+  (:use bohr.observers)
+  (:use bohr.journals))
 
-(defn- wrap-with-parentheses [string]
-  (str "(" string ")"))
+;;;
+;;; Code meant to be called after macroexpansion
+;;;
 
-(defn- wrap-with-do-and-namespace [block]
-  (conj block '(in-ns 'bohr.core) 'do))
+(defn force-get-reading! [name]
+  (if (known-reading? name) (get-reading name)
+      (do
+        (take-reading! name (observe name))
+        (get-reading name))))
 
-(defn- string-to-list [string]
-  (try
-    (read-string string)
-    (catch java.lang.RuntimeException e
-      (throw
-       (ex-info
-        (format "Malformed input: %s" (.getMessage e))
-        { :bohr true :type :bohr-malformed-input })))))
+(defn submit-in-observer! [observer-name name value options]
+  (submit-with-observer! (get-observer observer-name) name value options)
+  nil)
 
-(defn dsl-eval-string!
-  "Evaluate string as Bohr DSL."
-  [dsl-string]
-  (log/trace "Evaluating DSL")
-  (eval (wrap-with-do-and-namespace (string-to-list (wrap-with-parentheses dsl-string)))))
+;;;
+;;; Code for macroexpansion
+;;;
+
+(defmacro static [name value]
+  `(define-observer! ~name {} (fn [] ~value) []))
 
