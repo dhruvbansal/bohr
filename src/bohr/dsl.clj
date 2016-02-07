@@ -16,7 +16,7 @@
         (get-reading name))))
 
 (defn submit-in-observer! [observer-name name value & options]
-  (submit-with-observer! (get-observer observer-name) name value options)
+  (submit-with-observer! (get-observer observer-name) name value (apply hash-map options))
   nil)
 
 ;;;

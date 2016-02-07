@@ -16,5 +16,5 @@
             (* (Integer/parseInt hours)   3600)
             (* (Integer/parseInt minutes) 60))))
 
-(report :uptime :ttl 5 :desc "Uptime" :tags ["system", "boot"]
-        (submit "uptime" (:uptime.seconds) :units "s"))
+(report :uptime :ttl 5 :tags ["system", "boot"]
+        (submit "uptime" (:uptime.seconds) :desc "Uptime" :units "s"))
