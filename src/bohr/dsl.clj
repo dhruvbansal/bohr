@@ -22,6 +22,38 @@
 ;;; Code for macroexpansion
 ;;;
 
-(defmacro static [name value]
-  `(define-observer! ~name {} (fn [] ~value) []))
+(defn- extract-observer-arguments [macro-form]
+  (let [macro-vec   (apply vector macro-form)
+        name        (nth macro-vec 1)
+        options-vec (subvec macro-vec 2 (count macro-vec))
+        options     (apply hash-map options-vec)]
+    (vector name options)))
 
+(defn- replace-observer-references [instructions] instructions)
+
+(defn- calculate-dependencies [instructions] [])
+
+(defn- process-instructions [instructions]
+  [(replace-observer-references instructions)
+   (calculate-dependencies instructions)])
+
+(defmacro static [name value]
+  (let [[name options]
+        (extract-observer-arguments (butlast &form))]
+    `(let [initial-value# ~(last &form)]
+       (define-observer!
+         ~name
+         ~options
+         (fn [] initial-value#)
+         []))))
+
+(defmacro measure [& args]
+  (let [[name options]
+        (extract-observer-arguments (butlast &form))
+        [processed-instructions dependencies]
+        (process-instructions (last &form))]
+    `(define-observer!
+       ~name
+       ~options
+       (fn [] ~processed-instructions)
+       ~dependencies)))

@@ -1,10 +1,12 @@
 (require '[clojure.java.shell :refer [sh]])
 (require '[clojure.string :as string])
+(require '[clj-time.core :as time])
 
-(static :uptime.regexp #"(\d+) +days?, +(\d+):(\d+)")
+(static :uptime.regexp      #"(\d+) +days?, +(\d+):(\d+)")
+(static :uptime.start-time  (time/now))
 
-;; (measure :uptime.output :ttl 10
-;;          (string/trim (get (sh "uptime") :out)))
+(measure :uptime.output :ttl 5
+         (string/trim (get (sh "uptime") :out)))
 
 ;; (calc :uptime.seconds
 ;;       ([[_ days hours minutes]
