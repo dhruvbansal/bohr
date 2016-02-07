@@ -27,7 +27,6 @@
              (get observer :tags [])
              (get options :tags [])))
     }))
-    
 
 (defn define-journal!
   "Define a new journal."

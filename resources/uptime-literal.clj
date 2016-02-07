@@ -19,5 +19,5 @@
   [:uptime.regexp :uptime.output])
 
 (define-observer! :uptime {:ttl 5 :desc "Uptime" :tags ["system", "boot"] }
-  #(submit-in-observer! :uptime "uptime" (force-get-reading! :uptime.seconds) {:units "s"})
+  #(submit-in-observer! :uptime "uptime" (force-get-reading! :uptime.seconds) :units "s")
   [:uptime.seconds])

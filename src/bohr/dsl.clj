@@ -1,5 +1,6 @@
 (ns bohr.dsl
-  (:require [clojure.tools.logging :as log])
+  (:require [clojure.tools.logging :as log]
+            [clojure.walk :as walk])
   (:use bohr.notebook)
   (:use bohr.observers)
   (:use bohr.journals))
@@ -14,7 +15,7 @@
         (take-reading! name (observe name))
         (get-reading name))))
 
-(defn submit-in-observer! [observer-name name value options]
+(defn submit-in-observer! [observer-name name value & options]
   (submit-with-observer! (get-observer observer-name) name value options)
   nil)
 
@@ -29,13 +30,45 @@
         options     (apply hash-map options-vec)]
     (vector name options)))
 
-(defn- replace-observer-references [instructions] instructions)
+(defn- observer-reference? [form]
+  (and
+   (list? form)
+   (= 1 (count form))
+   (keyword? (first form))))
 
-(defn- calculate-dependencies [instructions] [])
+(defn- replace-observer-references [form]
+  (walk/postwalk
+   #(if (observer-reference? %)
+      (list 'force-get-reading! (first %))
+      %)
+   form))
 
-(defn- process-instructions [instructions]
-  [(replace-observer-references instructions)
-   (calculate-dependencies instructions)])
+(defn- submission? [form]
+  (and
+   (list? form)
+   (= 'submit (first form))))
+
+(defn- contextualize-submissions [name form]
+  (walk/postwalk
+   #(if (submission? %)
+      (conj (rest %) name 'submit-in-observer!)
+      %)
+   form))
+
+(defn- calculate-dependencies [form]
+  (let [dependencies (atom [])]
+    (walk/postwalk
+     #(do
+        (if (observer-reference? %)
+          (swap! dependencies conj (first %)))
+        %)
+     form)
+    @dependencies))
+  
+(defn- process-instructions [name instructions]
+  [(contextualize-submissions name
+    (replace-observer-references instructions))
+   (calculate-dependencies      instructions)])
 
 (defmacro static [name value]
   (let [[name options]
@@ -51,7 +84,40 @@
   (let [[name options]
         (extract-observer-arguments (butlast &form))
         [processed-instructions dependencies]
-        (process-instructions (last &form))]
+        (process-instructions name (last &form))]
+    `(define-observer!
+       ~name
+       ~options
+       (fn [] ~processed-instructions)
+       ~dependencies)))
+
+(defmacro calc [& args]
+  (let [[name options]
+        (extract-observer-arguments (butlast &form))
+        [processed-instructions dependencies]
+        (process-instructions name (last &form))]
+    `(define-observer!
+       ~name
+       ~options
+       (fn [] ~processed-instructions)
+       ~dependencies)))
+
+(defmacro calculate [& args]
+  (let [[name options]
+        (extract-observer-arguments (butlast &form))
+        [processed-instructions dependencies]
+        (process-instructions name (last &form))]
+    `(define-observer!
+       ~name
+       ~options
+       (fn [] ~processed-instructions)
+       ~dependencies)))
+
+(defmacro report [& args]
+  (let [[name options]
+        (extract-observer-arguments (butlast &form))
+        [processed-instructions dependencies]
+        (process-instructions name (last &form))]
     `(define-observer!
        ~name
        ~options
