@@ -1,15 +1,37 @@
-(static :uptime.regexp #"(\d+) +days?, +(\d+):(\d+)")
+(defn- boot-time-linux []
+  ;; e.g. - 2016-01-31 01:58:41
+  (time-format/parse
+   (time-format/formatter "YYYY-MM-dd HH:mm:ss")
+   (sh-output "uptime -s")))
 
-(observe :uptime.output :ttl 5
-         (string/trim (get (sh "uptime") :out)))
+(defn- uptime-linux []
+  (Float/parseFloat
+   (first
+    (string/split
+     (procfile-contents "uptime")
+     #" +"))))
 
-(observe :uptime.seconds
-         (let [[_ days hours minutes]
-               (re-find (:uptime.regexp)  (:uptime.output))]
-           (+
-            (* (Integer/parseInt days)    86400)
-            (* (Integer/parseInt hours)   3600)
-            (* (Integer/parseInt minutes) 60))))
+(defn- boot-time-mac []
+  ;; e.g. - 2016-01-31 01:58:41
+  (time-format/parse
+   (time-format/formatter "EEE MMM d HH:mm:ss YYYY")
+   (string/replace
+    (last (re-find #"\} (.*+)$" (sysctl "kern.boottime")))
+    #" +"
+    " " )))
 
-(observe :uptime :ttl 5 :tags ["system", "boot"]
-        (submit "uptime" (:uptime.seconds) :desc "Uptime" :units "s"))
+(defn- uptime-mac [boot-time]
+  (time/in-seconds
+   (time/interval boot-time (time/now))))
+
+(observe :boot-time
+         (case (:os.type)
+           "Linux" (boot-time-linux)
+           "Mac"   (boot-time-mac)
+           (log/error "Cannot observe boot-time for OS" (:os.type))))
+           
+(observe :uptime :ttl 5 :tags ["system"] :units "s"
+         (submit "uptime" (case (:os.type)
+                            "Linux" (uptime-linux)
+                            "Mac"   (uptime-mac (:boot-time))
+                            (log/error "Cannot observe uptime for OS" (:os.type)))))

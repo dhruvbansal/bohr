@@ -23,6 +23,8 @@
       (require '[clojure.tools.logging :as log])
       (require '[clojure.string :as string])
       (require '[clj-time.core :as time])
+      (require '[clj-time.format :as time-format])
+      (require '[clojure.java.io :as io])
       (use 'clojure.java.shell)
       (use 'bohr.helpers)
       (use 'bohr.parsers)
