@@ -12,6 +12,9 @@
 (def ^{:private true} observers (atom {}))
 (def observations (atom 0))
 (def ^{:dynamic true} current-observer nil)
+(def ^{:dynamic true} current-prefix nil)
+(def ^{:dynamic true} current-units nil)
+(def ^{:dynamic true} current-tags nil)
 
 (defn- known-observer? [name]
   (contains? @observers name))
@@ -54,8 +57,12 @@
   ;; FIXME add error handling here...
   (log/debug "Observing" name)
   (swap! observations inc)
-  (binding [current-observer name]
-    ((get-observer name :instructions))))
+  (let [observer (get-observer name)]
+    (binding [current-observer name
+              current-prefix   (get observer :prefix)
+              current-units    (get observer :units)
+              current-tags     (get observer :tags [])]
+      ((get observer :instructions)))))
 
 (defn for-each-observer
   "Iterate over all observers."

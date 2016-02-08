@@ -9,17 +9,30 @@
 
 (defn- load-average-linux []
   (let [load-average-info
-        (string/split (procfile-contents "loadavg") #" +")]
+        (map
+         #(Float/parseFloat %)
+         (take
+          3
+          (string/split
+           (procfile-contents "loadavg")
+           #" +")))]
     {:1  (nth load-average-info 0)
      :5  (nth load-average-info 1)
      :15 (nth load-average-info 2)}))
 
 (defn- load-average-mac []
   (let [load-average-info
-        (string/split (sysctl "vm.loadavg") #" +")]
-    {:1  (nth load-average-info 1)
-     :5  (nth load-average-info 2)
-     :15 (nth load-average-info 3)}))
+        (map
+         #(Float/parseFloat %)
+         (rest
+          (take
+           4
+           (string/split
+            (sysctl "vm.loadavg")
+            #" +"))))]
+    {:1  (nth load-average-info 0)
+     :5  (nth load-average-info 1)
+     :15 (nth load-average-info 2)}))
 
 (defn- util-linux []
   (let [util-info
@@ -64,16 +77,14 @@
            "Linux" (count-linux)
            "Mac"   (count-mac)))
 
-(observe :cpu.load :tags ["cpu"] :prefix "cpu.load"
-         (doseq [[avg-name avg-value]
-                 (case-os
-                  "Linux" (load-average-linux)
-                  "Mac"   (load-average-mac))]
-           (submit avg-name avg-value)))
+(observe :cpu.load :ttl 5, :tags ["system", "cpu"] :prefix "cpu.load"
+         (submit-values
+          (case-os
+           "Linux" (load-average-linux)
+           "Mac"   (load-average-mac))))
 
-(observe :cpu.util :tags ["cpu"] :prefix "cpu.util" :units "%"
-         (doseq [[util-name util-value]
-                 (case-os
-                  "Linux" (util-linux)
-                  "Mac"   (util-mac))]
-           (submit util-name util-value)))
+(observe :cpu.util :ttl 5, :tags ["system", "cpu"] :prefix "cpu.util" :units "%"
+         (submit-values
+          (case-os
+           "Linux" (util-linux)
+           "Mac"   (util-mac))))

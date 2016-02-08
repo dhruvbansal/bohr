@@ -1,9 +1,10 @@
 (ns bohr.dsl
-  (:require [clojure.tools.logging :as log])
-  (:use bohr.notebook)
-  (:use bohr.observers)
-  (:use bohr.journals)
-  (:use bohr.dependencies))
+  (:require [clojure.tools.logging :as log]
+            [clojure.string :as string])
+  (:use bohr.notebook
+        bohr.observers
+        bohr.journals
+        bohr.dependencies))
 
 (defn & [name]
   (register-dependency! current-observer name)
@@ -11,10 +12,6 @@
       (do
         (take-reading! name (make-observation name))
         (get-reading name))))
-
-(defn submit [metric-name value & options]
-  (let [observer (get-observer current-observer)]
-    (submit-with-observer! observer (name metric-name) value (apply hash-map options))))
 
 (defn- extract-observer-arguments [macro-form]
   (let [macro-vec   (apply vector macro-form)
@@ -31,7 +28,6 @@
          ~name
          ~options
          (fn [] initial-value#)))))
-
 
 (defmacro observe [& args]
   (let [[name options]

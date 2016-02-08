@@ -1,6 +1,8 @@
 (ns bohr.journals
   (:require [clj-time.core :as time]
-            [clojure.tools.logging :as log]))
+            [clojure.tools.logging :as log]
+            [clojure.string :as string])
+  (:use bohr.observers))
 
 (def ^{:private true} journals (atom {}))
 
@@ -10,31 +12,37 @@
 (defn journal-count []
   (count @journals))
 
-(defn- submit-all!
-  "Submit the metric to all journals."
-  [name value options]
-  (log/trace "Submitting metric" name "with value" value "and options" options)
-  (doseq [[_ journal] (seq @journals)]
-    (journal name value options)
-    (swap! publications inc))
-  (swap! submissions inc))
-  
-(defn submit-with-observer!
-  "Submit the metric from within the context of the given observation."
-  [observer name value options]
-  (submit-all!
-   (if (get observer :prefix)
-     (format "%s.%s" (get observer :prefix) name)
-     name)
-   value
+(defn- scope-metric-name [raw-name]
+  (let [string-name (name raw-name)]
+    (string/join "." (filter identity [current-prefix string-name]))))
+
+(defn- scope-metric-options [options]
    {
-    :desc  (get options :desc  (get observer :desc))
-    :units (get options :units (get observer :units))
+    :desc  (get options :desc)
+    :units (get options :units current-units)
     :tags  (distinct
             (concat
-             (get observer :tags [])
-             (get options :tags [])))
-    }))
+             (get options :tags [])
+             current-tags))
+    })
+
+(defn submit
+  [name value & args]
+  (let [metric-name    (scope-metric-name name)
+        metric-options (scope-metric-options (apply hash-map args))]
+  (log/trace "Submitting metric" metric-name "with value" value "and options" metric-options)
+  (doseq [[_ journal] (seq @journals)]
+    (journal metric-name value metric-options)
+    (swap! publications inc))
+  (swap! submissions inc)))
+
+(defn submit-values [values & args]
+  (let [options (apply hash-map args)]
+    (binding [current-prefix (string/join "." (filter identity [current-prefix (get options :prefix)]))
+              current-units  (get options :units current-units)
+              current-tags   (distinct (concat current-tags (get options :tags [])))]
+      (doseq [[name value] values]
+        (submit name value)))))
 
 (defn define-journal!
   "Define a new journal."

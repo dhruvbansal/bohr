@@ -1,8 +1,10 @@
 (ns bohr.helpers
   (:require [clojure.string  :as string]
             [clojure.java.io :as io])
-  (:use clojure.java.shell bohr.observers))
-  
+  (:use clojure.java.shell
+        bohr.observers
+        bohr.journals))
+
 (defn sh-output [command]
   (string/trim (get (sh "bash" "-c" command) :out)))
 
@@ -21,3 +23,10 @@
   `(case (& :os.type)
      ~@clauses
      (log/error "Cannot observe" current-observer "for OS" (& :os.type))))
+
+(defn translate [source mapping]
+  (into
+   {}
+   (map
+    (fn [[source_name target_name]] [target_name (get source source_name)])
+    (seq mapping))))
