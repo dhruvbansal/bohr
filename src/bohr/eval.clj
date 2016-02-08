@@ -17,8 +17,9 @@
   (conj block 'do))
 
 (defn- setup-script-namespace []
-  (binding [*ns* *ns*]
-      (in-ns 'bohr.script)
+  (let [new-namespace-name (gensym)]
+    (binding [*ns* *ns*]
+      (in-ns new-namespace-name)
       (refer-clojure)
       (require '[clojure.tools.logging :as log])
       (require '[clojure.string :as string])
@@ -31,14 +32,15 @@
       (use 'bohr.observers)
       (use 'bohr.notebook)
       (use 'bohr.journals)
-      (use 'bohr.dsl)))
+      (use 'bohr.dsl))
+    new-namespace-name))
 
 (defn- eval-in-script-namespace [form]
-  (setup-script-namespace)
-  (binding [*ns* *ns*]
-    (in-ns 'bohr.script)
-    (refer-clojure)
-    (eval form)))
+  (let [new-namespace-name (setup-script-namespace)]
+    (binding [*ns* *ns*]
+      (in-ns new-namespace-name)
+      (refer-clojure)
+      (eval form))))
 
 (defn eval-script-content! [dsl-string]
   (log/trace "Evaluating script")
