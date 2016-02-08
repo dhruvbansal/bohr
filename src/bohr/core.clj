@@ -12,18 +12,18 @@
   (:gen-class))
 
 (defn- refresh-reading! [name]
-  (take-reading! name (observe name))
+  (take-reading! name (make-observation name))
   (doseq [dependent (get @observer-has-dependents name [])]
     (refresh-reading! dependent)))
 
-(defn- populate! [runtime-options]
-  (read-input! (get runtime-options :input))
-  (if (not (observers?)) (log/warn "No observations defined!"))
-  (check-undefined-dependencies!))
+(defn- populate! [input-paths]
+  (read-inputs! input-paths)
+  (check-undefined-dependencies!)
+  (if (not (observers?)) (log/warn "No observers defined, Bohr has nothing to do!!")))
 
 (defn- start! [runtime-options]
-  (log/debug "Taking initial readings...")
-  (for-each-observer (fn [name _] (take-reading! name (observe name)))))
+  (log/info "Taking initial readings")
+  (for-each-observer (fn [name _] (take-reading! name (make-observation name)))))
 
 (def pool (mk-pool))
 
@@ -38,7 +38,7 @@
         :initial-delay ttl-in-ms)))))
 
 (defn- loop! [runtime-options]
-  (log/debug "Entering main loop!")
+  (log/info "Entering main loop!")
   (let [schedules (periodically-observe!)]
     (try
       ;; For some reason, this `doseq' block must be here in order for
@@ -53,12 +53,12 @@
 (defn- shutdown! []
   (exit 0 "Bohr is exiting"))
 
-(defn- boot! [runtime-options]
+(defn- boot! [input-paths runtime-options]
   (try
-    (log/debug "Bohr booting...")
-    (populate! runtime-options)
+    (log/debug "Bohr is booting")
+    (populate! input-paths)
     (start! runtime-options)
-    (if (get runtime-options :daemon)
+    (if (get runtime-options :loop)
       (loop! runtime-options)
       (shutdown!))
     
@@ -68,4 +68,4 @@
         (throw e)))))
 
 (defn -main [& cli-args]
-  (boot! (parse-cli cli-args)))
+  (apply boot! (parse-cli cli-args)))

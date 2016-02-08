@@ -14,6 +14,7 @@
   (:require [clojure.tools.logging :as log]))
 
 (def ^{:private true} observers (atom {}))
+(def observations (atom 0))
 
 (defn- known-observer? [name]
   (contains? @observers name))
@@ -81,11 +82,12 @@
               (format "Undefined dependency on observer '%s' in observer '%s'" dependency observer)
               {:bohr true :type :bohr-undefined-dependency}))))))))
 
-(defn observe
+(defn make-observation
   "Make an observation."
   [name]
   ;; FIXME add error handling here...
   (log/debug "Observing" name)
+  (swap! observations inc)
   ((get-observer name :instructions)))
 
 (defn for-each-observer

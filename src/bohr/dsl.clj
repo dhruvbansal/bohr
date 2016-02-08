@@ -12,7 +12,7 @@
 (defn force-get-reading! [name]
   (if (known-reading? name) (get-reading name)
       (do
-        (take-reading! name (observe name))
+        (take-reading! name (make-observation name))
         (get-reading name))))
 
 (defn submit-in-observer! [observer-name name value & options]
@@ -80,40 +80,7 @@
          (fn [] initial-value#)
          []))))
 
-(defmacro measure [& args]
-  (let [[name options]
-        (extract-observer-arguments (butlast &form))
-        [processed-instructions dependencies]
-        (process-instructions name (last &form))]
-    `(define-observer!
-       ~name
-       ~options
-       (fn [] ~processed-instructions)
-       ~dependencies)))
-
-(defmacro calc [& args]
-  (let [[name options]
-        (extract-observer-arguments (butlast &form))
-        [processed-instructions dependencies]
-        (process-instructions name (last &form))]
-    `(define-observer!
-       ~name
-       ~options
-       (fn [] ~processed-instructions)
-       ~dependencies)))
-
-(defmacro calculate [& args]
-  (let [[name options]
-        (extract-observer-arguments (butlast &form))
-        [processed-instructions dependencies]
-        (process-instructions name (last &form))]
-    `(define-observer!
-       ~name
-       ~options
-       (fn [] ~processed-instructions)
-       ~dependencies)))
-
-(defmacro report [& args]
+(defmacro observe [& args]
   (let [[name options]
         (extract-observer-arguments (butlast &form))
         [processed-instructions dependencies]

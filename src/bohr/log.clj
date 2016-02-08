@@ -11,5 +11,5 @@
                     (=  1 verbosity) :debug
                     (<= 2 verbosity) :trace)]
     (set-loggers!
-     ["bohr.core" "bohr.cli" "bohr.dsl" "bohr.scripts" "bohr.notebook" "bohr.observers" "bohr.journals" "bohr.script"]
+     ["bohr.core" "bohr.cli" "bohr.dsl" "bohr.scripts" "bohr.notebook" "bohr.observers" "bohr.journals" "bohr.script" "bohr.parsers" "bohr.eval"]
      {:pattern (get runtime-options :log-pattern) :level log-level} )))

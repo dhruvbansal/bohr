@@ -20,7 +20,7 @@
           (filter identity (.list dir))]
     (read-script! (io/file dir clojure-path))))
 
-(defn read-input! [input-path]
+(defn- read-input! [input-path]
   (if input-path
     (let [input (io/file input-path)]
       (cond
@@ -34,3 +34,7 @@
 
         (.isDirectory input) (read-script-directory! input)
         :else                (read-script!           input)))))
+
+(defn read-inputs! [input-paths]
+  (doseq [input-path input-paths]
+    (read-input! input-path)))

@@ -4,12 +4,20 @@
 
 (def ^{:private true} journals (atom {}))
 
+(def submissions (atom 0))
+(def publications (atom 0))
+
+(defn journal-count []
+  (count @journals))
+
 (defn- submit-all!
   "Submit the metric to all journals."
   [name value options]
-  (log/trace "Submitted metric" name "with value" value "and options" options)
+  (log/trace "Submitting metric" name "with value" value "and options" options)
   (doseq [[_ journal] (seq @journals)]
-    (journal name value options)))
+    (journal name value options)
+    (swap! publications inc))
+  (swap! submissions inc))
   
 (defn submit-with-observer!
   "Submit the metric from within the context of the given observation."

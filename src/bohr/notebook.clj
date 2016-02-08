@@ -12,7 +12,7 @@
   (get @atomic-symbols name))
 
 (defn- define-new-atom! [name state]
-  (log/trace "Defining new atom for" name "with initial state" state)
+  (log/trace (format "Creating value for %s --> %s" name state))
   (swap! atomic-symbols assoc name (gensym "bohr-"))
   (intern 'bohr.core (atomic-symbol-for name) (atom state)))
 
@@ -37,5 +37,5 @@
   (if (not (known-reading? name))
     (define-new-atom! name state)
     (do
-      (log/trace "Updating atom for" name "with state" state)
+      (log/trace (format "Updating value for %s --> %s" name state))
       (reset! (atom-for name) state))))

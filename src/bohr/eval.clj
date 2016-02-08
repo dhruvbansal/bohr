@@ -20,6 +20,12 @@
   (binding [*ns* *ns*]
       (in-ns 'bohr.script)
       (refer-clojure)
+      (require '[clojure.tools.logging :as log])
+      (require '[clojure.string :as string])
+      (require '[clj-time.core :as time])
+      (use 'clojure.java.shell)
+      (use 'bohr.helpers)
+      (use 'bohr.parsers)
       (use 'bohr.observers)
       (use 'bohr.notebook)
       (use 'bohr.journals)
