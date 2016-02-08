@@ -5,6 +5,7 @@
    bohr.observers
    bohr.notebook
    bohr.journals
+   bohr.dependencies
    bohr.dsl   
    bohr.scripts
    bohr.cli
@@ -13,12 +14,12 @@
 
 (defn- refresh-reading! [name]
   (take-reading! name (make-observation name))
-  (doseq [dependent (get @observer-has-dependents name [])]
+  (doseq [dependent (downstream-of name)]
     (refresh-reading! dependent)))
 
 (defn- populate! [input-paths]
   (read-inputs! input-paths)
-  (check-undefined-dependencies!)
+  (check-undefined-dependencies! (observer-names))
   (if (not (observers?)) (log/warn "No observers defined, Bohr has nothing to do!!")))
 
 (defn- start! [runtime-options]

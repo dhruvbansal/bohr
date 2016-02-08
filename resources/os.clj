@@ -4,7 +4,7 @@
 ;;; when defining other observers which need to interact with the
 ;;; operating system, typically via case statements:
 ;;;
-;;;   (case (:kernel.name)
+;;;   (case (& :kernel.name)
 ;;;     "Linux"  (...)
 ;;;     "Darwin" (...)
 ;;;     ...

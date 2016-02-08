@@ -1,7 +1,7 @@
 (ns bohr.log
   (:use clj-logging-config.log4j))
 
-(def default-log-options { :log-level :info :log-pattern "%-5p %d{ISO8601} %m%n"})
+(def default-log-options { :log-level :info :log-pattern "%-5p %d{ISO8601} [%-12c{1}] %m%n"})
 
 (defn set-bohr-logger! [runtime-options]
   (let [default-log-level (get runtime-options :log-level)

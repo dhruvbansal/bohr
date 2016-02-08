@@ -1,7 +1,7 @@
 (ns bohr.helpers
   (:require [clojure.string  :as string]
             [clojure.java.io :as io])
-  (:use clojure.java.shell))
+  (:use clojure.java.shell bohr.observers))
   
 (defn sh-output [command]
   (string/trim (get (sh "bash" "-c" command) :out)))
@@ -16,3 +16,8 @@
 
 (defn sysctl [name]
   (sh-output (format "sysctl -n '%s'" name)))
+
+(defmacro case-os [& clauses]
+  `(case (& :os.type)
+     ~@clauses
+     (log/error "Cannot observe" current-observer "for OS" (& :os.type))))

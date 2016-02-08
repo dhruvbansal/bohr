@@ -3,24 +3,24 @@
 ;;;; a value: that observer's reading.
 ;;;;
 ;;;; Observers' functions can refer to the current readings of other
-;;;; observers, creating a dependency graph among observers.  Circular
-;;;; dependencies are prevented by searching for them when new
-;;;; observers are defined.
-;;;;
-;;;; Undefined dependencies should be checked for once all observers
-;;;; are defined but have not started taking readings.
+;;;; observers, creating a dependency graph among observers, see
+;;;; dependencies.clj for further details.
 
 (ns bohr.observers
   (:require [clojure.tools.logging :as log]))
 
 (def ^{:private true} observers (atom {}))
 (def observations (atom 0))
+(def ^{:dynamic true} current-observer nil)
 
 (defn- known-observer? [name]
   (contains? @observers name))
 
 (defn observer-count []
   (count @observers))
+
+(defn observer-names []
+  (keys @observers))
 
 (defn observers? []
   (< 0 (observer-count)))
@@ -41,46 +41,12 @@
        (format "No such observer '%s'" name)
        {:bohr true :type :bohr-no-such-observer-exception})))))
 
-(def observer-depends-on (atom {}))
-
-(def observer-has-dependents (atom {}))
-
-(defn- prevent-circular-dependencies! [dependencies dependency-chain]
-  (doseq [dependency dependencies]
-    (let [extended-dependency-chain (conj dependency-chain dependency)]
-      (if (= dependency (first dependency-chain))
-        (throw (ex-info
-                (format "Circular dependency among observers: %s" extended-dependency-chain)
-                {:bohr true :type :bohr-circular-dependency-exception
-                 :dependency-chain extended-dependency-chain})))
-      (prevent-circular-dependencies!
-       (get @observer-depends-on dependency [])
-       extended-dependency-chain))))
-
 (defn define-observer!
   "Define a new observer."
-  [name options instructions dependencies]
-  (log/trace "Defining observer" name "with options" options "and dependencies" dependencies)
-  (prevent-circular-dependencies! dependencies (vector name))
+  [name options instructions]
+  (log/trace "Defining observer" name "with options" options)
   (let [new-options (assoc options :instructions instructions)]
-    (swap! observers assoc name new-options))
-  (swap! observer-depends-on assoc name dependencies)
-  (doseq [dependency dependencies]
-    (let [current-dependents (get @observer-has-dependents dependency [])
-          new-dependents     (conj current-dependents name)]
-      (swap! observer-has-dependents assoc dependency new-dependents))))
-
-(defn check-undefined-dependencies! []
-  (doseq [[observer dependencies] (seq @observer-depends-on)]
-    (doseq [dependency dependencies]
-      (try
-        (get-observer dependency)
-        (catch clojure.lang.ExceptionInfo e
-          (if (= :bohr-no-such-observer-exception (-> e ex-data :type))
-            (throw
-             (ex-info
-              (format "Undefined dependency on observer '%s' in observer '%s'" dependency observer)
-              {:bohr true :type :bohr-undefined-dependency}))))))))
+    (swap! observers assoc name new-options)))
 
 (defn make-observation
   "Make an observation."
@@ -88,7 +54,8 @@
   ;; FIXME add error handling here...
   (log/debug "Observing" name)
   (swap! observations inc)
-  ((get-observer name :instructions)))
+  (binding [current-observer name]
+    ((get-observer name :instructions))))
 
 (defn for-each-observer
   "Iterate over all observers."

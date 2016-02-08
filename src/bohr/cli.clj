@@ -45,14 +45,14 @@ journals for Bohr to submit to via Clojure scripts in Bohr's DSL.
   (calc :my.intermediate
     ;; Arbitrary code here can refer to (current) values of
     ;; any previously defined observations.
-    (* (:my.static) (:my.once) (:my.periodic))
+    (* (& :my.static) (& :my.once) (& :my.periodic))
 
   ;; Submit reports that run either once or periodically, as above.
   ;; Reports can refer to the (current) values of observations &
   ;; calculations, as above.
   (report \"test\" ttl: 10
-    (submit \"metric.first\"  (:my.intermediate))
-    (submit \"metric.second\" (* 2 (:my.intermediate))))
+    (submit \"metric.first\"  (& :my.intermediate))
+    (submit \"metric.second\" (* 2 (& :my.intermediate))))
 
 Bohr's default behavior is to evaluate all scripts passed to it and
 then perform all observations, make all calculations, and submit all

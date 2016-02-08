@@ -1,7 +1,9 @@
+(def boot-time-formatter-linux (time-format/formatter "YYYY-MM-dd HH:mm:ss"))
+(def boot-time-formatter-mac   (time-format/formatter "EEE MMM d HH:mm:ss YYYY"))
+
 (defn- boot-time-linux []
-  ;; e.g. - 2016-01-31 01:58:41
   (time-format/parse
-   (time-format/formatter "YYYY-MM-dd HH:mm:ss")
+   boot-time-formatter-linux
    (sh-output "uptime -s")))
 
 (defn- uptime-linux []
@@ -12,26 +14,25 @@
      #" +"))))
 
 (defn- boot-time-mac []
-  ;; e.g. - 2016-01-31 01:58:41
   (time-format/parse
-   (time-format/formatter "EEE MMM d HH:mm:ss YYYY")
+   boot-time-formatter-mac
    (string/replace
     (last (re-find #"\} (.*+)$" (sysctl "kern.boottime")))
     #" +"
     " " )))
 
-(defn- uptime-mac [boot-time]
+(defn- uptime-mac []
   (time/in-seconds
-   (time/interval boot-time (time/now))))
+   (time/interval (& :boot-time) (time/now))))
 
 (observe :boot-time
-         (case (:os.type)
+         (case-os
            "Linux" (boot-time-linux)
-           "Mac"   (boot-time-mac)
-           (log/error "Cannot observe boot-time for OS" (:os.type))))
+           "Mac"   (boot-time-mac)))
+
            
 (observe :uptime :ttl 5 :tags ["system"] :units "s"
-         (submit "uptime" (case (:os.type)
+         (submit "uptime" (case-os
                             "Linux" (uptime-linux)
-                            "Mac"   (uptime-mac (:boot-time))
-                            (log/error "Cannot observe uptime for OS" (:os.type)))))
+                            "Mac"   (uptime-mac))))
+

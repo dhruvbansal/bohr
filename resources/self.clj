@@ -10,7 +10,7 @@
 
 (observe :bohr :ttl 5 :prefix "bohr" :tags ["bohr"]
          (do
-           (submit "runtime"             (bohr-runtime (:bohr.start-time)) :units "s")
+           (submit "runtime"             (bohr-runtime (& :bohr.start-time)) :units "s")
            (submit "observers"           (observer-count))
            (submit "observations"        @observations)
            (submit "metrics.gathered"    @submissions)
