@@ -12,9 +12,9 @@
         (take-reading! name (make-observation name))
         (get-reading name))))
 
-(defn submit [name value & options]
+(defn submit [metric-name value & options]
   (let [observer (get-observer current-observer)]
-    (submit-with-observer! observer name value (apply hash-map options))))
+    (submit-with-observer! observer (name metric-name) value (apply hash-map options))))
 
 (defn- extract-observer-arguments [macro-form]
   (let [macro-vec   (apply vector macro-form)
