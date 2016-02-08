@@ -17,7 +17,7 @@
 (defn- read-script-directory! [dir]
   (log/debug "Loading Bohr script directory at" (.getPath dir))
   (doseq [clojure-path
-          (filter identity (.list dir))]
+          (filter #(re-find #"\.clj$" %) (.list dir))]
     (read-script! (io/file dir clojure-path))))
 
 (defn- read-input! [input-path]
