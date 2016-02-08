@@ -10,6 +10,7 @@
                     (or (nil? verbosity) (= 0 verbosity)) default-log-level
                     (=  1 verbosity) :debug
                     (<= 2 verbosity) :trace)]
-    (set-loggers!
-     ["bohr.core" "bohr.cli" "bohr.dsl" "bohr.scripts" "bohr.notebook" "bohr.observers" "bohr.journals" "bohr.script" "bohr.parsers" "bohr.eval"]
-     {:pattern (get runtime-options :log-pattern) :level log-level} )))
+    (set-loggers! :root
+                 {:pattern (get runtime-options :log-pattern)
+                  :level log-level
+                  :out :console})))
