@@ -10,6 +10,7 @@
                  [org.clojure/tools.cli     "0.3.3"  ]
                  [org.clojure/tools.logging "0.3.1"  ]
                  [clj-logging-config        "1.9.3"  ]
+                 [table "0.5.0"]
                  ]
   :main ^:skip-aot bohr.core
   :target-path "target/%s"

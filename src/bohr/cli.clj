@@ -74,9 +74,12 @@ dies.  Silly guy."
   (doseq [error errors]
     (log/error error)))
 
-(defn exit [status msg]
-  (if msg (.println *err* msg))
-  (System/exit status))
+(defn exit
+  ([status]
+   (System/exit status))
+  ([status msg]
+   (if msg (.println *err* msg))
+   (System/exit status)))
 
 (defn parse-cli [cli-args]
   (let [{:keys [options arguments errors summary]} (parse-opts cli-args cli-parser-options)

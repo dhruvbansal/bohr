@@ -9,6 +9,7 @@
    bohr.dsl   
    bohr.scripts
    bohr.cli
+   bohr.summary
    )
   (:gen-class))
 
@@ -19,8 +20,7 @@
 
 (defn- populate! [input-paths]
   (read-inputs! input-paths)
-  (check-undefined-dependencies! (observer-names))
-  (if (not (observers?)) (log/warn "No observers defined, Bohr has nothing to do!!")))
+  (check-undefined-dependencies! (observer-names)))
 
 (defn- start! [runtime-options]
   (log/info "Taking initial readings")
@@ -52,17 +52,23 @@
         (throw e)))))
 
 (defn- shutdown! []
-  (exit 0 "Bohr is exiting"))
+  (exit 0))
 
 (defn- boot! [input-paths runtime-options]
   (try
     (log/debug "Bohr is booting")
     (populate! input-paths)
-    (start! runtime-options)
+    (check-for-observers!)
     (if (get runtime-options :loop)
-      (loop! runtime-options)
-      (shutdown!))
-    
+      (do
+        (check-for-journals!)
+        (start! runtime-options)
+        (loop! runtime-options))
+      (do
+        (prepare-for-summarize! runtime-options)
+        (start! runtime-options)
+        (summarize! runtime-options)
+        (shutdown!)))
     (catch clojure.lang.ExceptionInfo e
       (if (-> e ex-data :bohr)
         (log/error (.getMessage e))

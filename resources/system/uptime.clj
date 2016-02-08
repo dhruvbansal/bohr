@@ -34,5 +34,5 @@
 (observe :uptime :ttl 5 :tags ["system"] :units "s"
          (submit "uptime" (case-os
                             "Linux" (uptime-linux)
-                            "Mac"   (uptime-mac))))
+                            "Mac"   (uptime-mac)) :desc "System uptime"))
 

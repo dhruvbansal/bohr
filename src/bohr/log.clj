@@ -13,4 +13,4 @@
     (set-loggers! :root
                  {:pattern (get runtime-options :log-pattern)
                   :level log-level
-                  :out :console})))
+                  :out *err*})))

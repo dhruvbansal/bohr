@@ -4,13 +4,19 @@
             [clojure.string :as string])
   (:use bohr.observers))
 
-(def ^{:private true} journals (atom {}))
-
-(def submissions (atom 0))
+(def ^{:dynamic true} journals (atom {}))
+(def submissions  (atom 0))
 (def publications (atom 0))
+(def disabled-journals (atom (set [])))
 
 (defn journal-count []
   (count @journals))
+
+(defn journal-names []
+  (keys @journals))
+
+(defn journals? []
+  (< 0 (journal-count)))
 
 (defn- scope-metric-name [raw-name]
   (let [string-name (name raw-name)]
@@ -30,11 +36,13 @@
   [name value & args]
   (let [metric-name    (scope-metric-name name)
         metric-options (scope-metric-options (apply hash-map args))]
-  (log/trace "Submitting metric" metric-name "with value" value "and options" metric-options)
-  (doseq [[_ journal] (seq @journals)]
-    (journal metric-name value metric-options)
-    (swap! publications inc))
-  (swap! submissions inc)))
+    (log/trace "Submitting metric" metric-name "with value" value "and options" metric-options)
+    (doseq [[journal-name journal] (seq @journals)]
+      (if (not (contains? @disabled-journals journal-name))
+        (do
+          (journal metric-name value metric-options)
+          (swap! publications inc))))
+    (swap! submissions inc)))
 
 (defn submit-values [values & args]
   (let [options (apply hash-map args)]
@@ -49,6 +57,22 @@
   [name instructions]
   (swap! journals assoc name instructions))
 
-(define-journal! :console
-  (fn [name value options]
-    (println (format "%s\t%s\t%s\t%s" (time/now) name value options))))
+(defn console-journal [name value options]
+  (println (format "%s\t%s\t%s\t%s" (time/now) name value options)))
+
+(def memory-journal-publications (atom []))
+
+(defn memory-journal [name value options]
+  (swap! memory-journal-publications conj [name value options]))
+
+(defn memory-journal-publication-count []
+  (count @memory-journal-publications))
+
+(defn memory-journal-publications? []
+  (< 0 (memory-journal-publication-count)))
+  
+(defn check-for-journals! []
+  (if (not (journals?))
+    (do
+      (log/debug "No journals defined, defaulting to \"console\" journal.")
+      (define-journal! "console" console-journal))))

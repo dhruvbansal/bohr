@@ -76,3 +76,7 @@
   (map
    f
    (filter (fn [[_ observer]] (get observer :ttl)) (seq @observers))))
+
+(defn check-for-observers! []
+  (if (not (observers?))
+    (log/warn "No observers defined, Bohr has nothing to do!!")))
