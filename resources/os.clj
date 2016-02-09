@@ -21,7 +21,7 @@
     
     "Linux"
     (let [os-info
-          (parse-two-columns (sh-output "lsb_release -a"))]
+          (parse-properties (sh-output "lsb_release -a"))]
       (static :os.type     "Linux")
       (static :os.name     (get os-info "Distributor ID" "GNU/Linux"))
       (static :os.release  (get os-info "Release"        "unknown"))
@@ -35,7 +35,7 @@
 
     "Darwin"
     (let [os-info
-          (parse-two-columns (sh-output "sw_vers"))]
+          (parse-properties (sh-output "sw_vers"))]
       (static :os.type    "Mac")
       (static :os.name    (get os-info "ProductName"    "Mac OS X"))
       (static :os.release (get os-info "ProductVersion" "unknown"))

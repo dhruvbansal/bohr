@@ -2,9 +2,9 @@
 ;; and https://github.com/OpenTSDB/tcollector/issues/156
 (defn- memory-usage-linux []
   (translate
-   (parse-two-columns
+   (parse-properties
     (procfile-contents "meminfo")
-    :value-function #(* 1024 (Long/parseLong (string/replace % #" +kB" ""))))
+    :converter #(* 1024 (Long/parseLong (string/replace % #" +kB" ""))))
    {"MemFree"     :free
     "Active"      :active
     "Inactive"    :inactive
@@ -25,9 +25,9 @@
 ;; See http://apple.stackexchange.com/questions/81581/why-does-free-active-inactive-speculative-wired-not-equal-total-ram
 (defn- memory-usage-mac []
   (translate
-   (parse-two-columns
+   (parse-properties
     (sh-output "vm_stat")
-    :value-function #(* 4096 (Long/parseLong (string/replace % #"\." ""))))
+    :converter #(* 4096 (Long/parseLong (string/replace % #"\." ""))))
    {"Pages free" :free
     "Pages inactive" :inactive
     "Pages active" :active
