@@ -30,3 +30,16 @@
    (map
     (fn [[source_name target_name]] [target_name (get source source_name)])
     (seq mapping))))
+
+(defn annotate-values [values annotations]
+  (into
+   {}
+   (map
+    (fn [[key value]]
+      (let [annotation (get annotations key)]
+        [key {:value value
+              :desc  (get annotation :desc)
+              :units (get annotation :units)
+              :tags  (get annotation :tags)
+              }]))
+    (seq values))))

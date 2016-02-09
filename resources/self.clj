@@ -12,6 +12,6 @@
          (do
            (submit "runtime"             (bohr-runtime (& :bohr.start-time)) :units "s" :desc "Bohr uptime")
            (submit "observers"           (observer-count) :desc "Number of defined observers")
-           (submit "observations"        @observations :desc "Number of observations made")
-           (submit "metrics.gathered"    @submissions :desc "Number of unique metrics gathered")
-           (submit "metrics.transmitted" @publications :desc "Number of metrics transmitted via all journals")))
+           (submit "observations"        @observations :desc "Number of observations made" :tags ["counter"])
+           (submit "metrics.gathered"    @submissions :desc "Number of unique metrics gathered" :tags ["counter"])
+           (submit "metrics.transmitted" @publications :desc "Number of metrics transmitted via all journals" :tags ["counter"])))

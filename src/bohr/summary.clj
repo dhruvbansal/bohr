@@ -3,24 +3,38 @@
             [clojure.set :as set]
             [clojure.string :as string])
   (:use table.core
+        bohr.observers
         bohr.journals))
 
-(defn- summary-value [value]
+(defn- formatted-ttl [observer-name]
+  (let [ttl (get-observer observer-name :ttl)]
+    (if ttl
+      (format "%d" ttl)
+      "")))
+      
+(defn- formatted-value [value]
   (cond
     (float? value)
     (format "%.3f" value)
     
     :else (str value)))
 
-(defn- summary-tags [tags]
-  (string/join "," (seq tags)))
+(defn formatted-value-with-units [value options]
+  (format
+   "%s %s"
+   (formatted-value value)
+   (or (get options :units) " ")))
 
-(defn- summary-row [row-name value options]
+(defn- formatted-tags [tags]
+  (string/join "," (sort (seq tags))))
+
+(defn- summary-row [observer-name row-name value options]
   [
-   (format "%s" (name row-name))
-   (format "%s %s" (summary-value value) (or (get options :units) " "))
-   (format "%s" (or (get options :desc) ""))
-   (format "%s" (summary-tags (get options :tags)))
+   (formatted-ttl observer-name)
+   (name row-name)
+   (formatted-value-with-units value options)
+   (or (get options :desc) "")
+   (formatted-tags (get options :tags))
    ])
 
 (defn- summary-table []
@@ -28,7 +42,7 @@
    (map
     (fn [publication] (apply summary-row publication))
     @memory-journal-publications)
-   (list "Name" "Value (units)" "Description" "Tags")))
+   (list "TTL" "Name" "Value (units)" "Description" "Tags")))
 
 (defn prepare-for-summarize! [runtime-options]
   (reset!

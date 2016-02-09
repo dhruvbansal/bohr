@@ -50,7 +50,11 @@
               current-units  (get options :units current-units)
               current-tags   (distinct (concat current-tags (get options :tags [])))]
       (doseq [[name value] values]
-        (submit name value)))))
+        (if (and
+             (map? value)
+             (contains? value :value))
+          (submit name (get value :value) :units (get value :units) :desc (get value :desc) :tags (get value :tags []))
+          (submit name value))))))
 
 (defn define-journal!
   "Define a new journal."
@@ -63,7 +67,7 @@
 (def memory-journal-publications (atom []))
 
 (defn memory-journal [name value options]
-  (swap! memory-journal-publications conj [name value options]))
+  (swap! memory-journal-publications conj [current-observer name value options]))
 
 (defn memory-journal-publication-count []
   (count @memory-journal-publications))
