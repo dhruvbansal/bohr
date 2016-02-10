@@ -17,6 +17,13 @@
           (name (make-property-name unit state pct))
           (get filesystem :name)))
 
+(defn- make-metric-description [filesystem unit state]
+  (format
+   "%s %s on %s"
+   (string/capitalize (name state))
+   (name unit)
+   (get filesystem :name)))
+
 (defn- pct-unit-in-states-map [filesystem unit]
   (let [free-property  (make-property-name unit :free  false)
         used-property  (make-property-name unit :used  false)
@@ -49,17 +56,14 @@
     (used-properties-for filesystem))))
 
 (defn- parsed-df-output [command converters]
-  (into
-   {}
-   (map
-    (fn [filesystem] [(get filesystem :name) filesystem])
-    (filter
-     (fn [filesystem] (re-find #"^/" (get filesystem :name)))
-     (parse-table
-      (sh-output (format "df %s" command))
-      converters
-      :start-at 2
-      :transform-object with-pct-properties)))))
+  (map-table
+   :name
+   (parse-table
+    (sh-output (format "df %s" command))
+    converters
+    :start-at 2
+    :row-filter #(re-find #"^/" (get % :name))
+    :transform-row with-pct-properties)))
 
 (defn- filesystems-linux-blocks []
   (parsed-df-output
@@ -110,11 +114,13 @@
       (submit
        (make-metric-name unit state filesystem false)
        (get filesystem (make-property-name unit state false))
+       :desc (make-metric-description filesystem unit state)
        :unit "B")
       (if (not (= :total state))
         (submit
          (make-metric-name unit state filesystem true)
          (get filesystem (make-property-name unit state true))
+         :desc (make-metric-description filesystem unit state)
          :unit "%")))))
 
 (defn- filesystems []

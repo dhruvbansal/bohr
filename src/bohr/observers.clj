@@ -13,6 +13,7 @@
 (def observations (atom 0))
 (def ^{:dynamic true} current-observer nil)
 (def ^{:dynamic true} current-prefix nil)
+(def ^{:dynamic true} current-suffix nil)
 (def ^{:dynamic true} current-units nil)
 (def ^{:dynamic true} current-tags nil)
 
@@ -60,6 +61,7 @@
   (let [observer (get-observer name)]
     (binding [current-observer name
               current-prefix   (get observer :prefix)
+              current-suffix   (get observer :suffix)
               current-units    (get observer :units)
               current-tags     (get observer :tags [])]
       ((get observer :instructions)))))

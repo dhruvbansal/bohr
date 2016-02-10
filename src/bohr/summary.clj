@@ -30,10 +30,10 @@
 
 (defn- summary-row [observer-name row-name value options]
   [
-   (formatted-ttl observer-name)
    (name row-name)
    (formatted-value-with-units value options)
    (or (get options :desc) "")
+   (formatted-ttl observer-name)
    (formatted-tags (get options :tags))
    ])
 
@@ -42,7 +42,7 @@
    (map
     (fn [publication] (apply summary-row publication))
     @memory-journal-publications)
-   (list "TTL" "Name" "Value (units)" "Description" "Tags")))
+   (list "Name" "Value (units)" "Description" "TTL", "Tags")))
 
 (defn prepare-for-summarize! [runtime-options]
   (reset!

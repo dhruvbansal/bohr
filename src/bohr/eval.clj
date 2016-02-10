@@ -16,10 +16,13 @@
 (defn- wrap-with-do [block]
   (conj block 'do))
 
-(defn- setup-script-namespace []
-  (let [new-namespace-name (gensym)]
-    (binding [*ns* *ns*]
-      (in-ns new-namespace-name)
+(defn setup-script-namespace
+  ([]
+   (setup-script-namespace (gensym)))
+  ([namespace]
+   (do 
+     (binding [*ns* *ns*]
+      (in-ns namespace)
       (refer-clojure)
       (require '[clojure.tools.logging :as log])
       (require '[clojure.string :as string])
@@ -33,7 +36,9 @@
       (use 'bohr.notebook)
       (use 'bohr.journals)
       (use 'bohr.dsl))
-    new-namespace-name))
+     namespace)))
+
+(setup-script-namespace (symbol 'bohr.repl))
 
 (defn- eval-in-script-namespace [form]
   (let [new-namespace-name (setup-script-namespace)]

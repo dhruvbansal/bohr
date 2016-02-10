@@ -19,16 +19,19 @@
   (< 0 (journal-count)))
 
 (defn- scope-metric-name [raw-name]
-  (let [string-name (name raw-name)]
-    (string/join "." (filter identity [current-prefix string-name]))))
-
+  (let [string-name (name raw-name)
+        prefixed-string (string/join "." (filter identity [current-prefix string-name]))]
+    (if current-suffix
+      (format "%s%s" prefixed-string current-suffix)
+      prefixed-string)))
+        
 (defn- scope-metric-options [options]
    {
     :desc  (get options :desc)
-    :units (get options :units current-units)
+    :units (or (get options :units) current-units)
     :tags  (distinct
             (concat
-             (get options :tags [])
+             (or (get options :tags) [])
              current-tags))
     })
 
@@ -47,13 +50,14 @@
 (defn submit-values [values & args]
   (let [options (apply hash-map args)]
     (binding [current-prefix (string/join "." (filter identity [current-prefix (get options :prefix)]))
+              current-suffix (string/join ""  (filter identity [current-suffix (get options :suffix)]))
               current-units  (get options :units current-units)
               current-tags   (distinct (concat current-tags (get options :tags [])))]
       (doseq [[name value] values]
         (if (and
              (map? value)
              (contains? value :value))
-          (submit name (get value :value) :units (get value :units) :desc (get value :desc) :tags (get value :tags []))
+          (submit name (get value :value) :units (get value :units current-units) :desc (get value :desc) :tags (get value :tags current-tags))
           (submit name value))))))
 
 (defn define-journal!
