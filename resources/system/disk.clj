@@ -19,28 +19,26 @@
 ;; *logical* sector size is almost always 512, even on modern drives
 ;; with 4K physical sectors.
 (def sector-size 512)
-(defn- sectors-to-bytes [sectors]
-  (* sector-size sectors))
   
 (defn- disks-linux []
   (map-table
    :name
    (parse-table
     (procfile-contents "diskstats")
-    [[nil              identity]
-     [nil              identity]
-     [:name            identity]
-     [:reads            #(Long/parseLong %)]
-     [:reads-merged     #(Long/parseLong %)]
-     [:bytes.read       #(sectors-to-bytes (Long/parseLong %))]
-     [:time.read        #(Long/parseLong %)]
-     [:writes           #(Long/parseLong %)]
-     [:writes-merged    #(Long/parseLong %)]
-     [:bytes.written    #(sectors-to-bytes (Long/parseLong %))]
-     [:time.write       #(Long/parseLong %)]
-     [:current-io       #(Long/parseLong %)]
-     [:time.io          #(Long/parseLong %)]
-     [:time.io-weighted #(Long/parseLong %)]]
+    [[nil               identity]
+     [nil               identity]
+     [:name             identity]
+     [:reads            :long]
+     [:reads-merged     :long]
+     [:bytes.read       sector-size]
+     [:time.read        :long]
+     [:writes           :long]
+     [:writes-merged    :long]
+     [:bytes.written    sector-size]
+     [:time.write       :long]
+     [:current-io       :long]
+     [:time.io          :long]
+     [:time.io-weighted :long]]
     :row-filter
     #(not (re-find #"(loop|ram)" (get % :name))))
    :delete-key true
@@ -52,6 +50,4 @@
 
 (observe :disk :ttl 5 :tags ["system" "disk"] :prefix "disk"
          (doseq [[disk-name disk] (seq (disks))]
-           (println (disks))
            (submit-values disk :suffix (format "[%s]" disk-name))))
-

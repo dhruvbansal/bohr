@@ -15,12 +15,4 @@
   :main ^:skip-aot bohr.core
   :target-path "target/%s"
 
-  :repl-options {
-                 ;; This expression will run when first opening a REPL, in the
-                 ;; namespace from :init-ns or :main if specified.
-                 :init (do (in-ns bohr.repl) (refer-clojure))
-                 ;; Skip's the default requires and printed help message.
-                 :skip-default-init false
-                 }
-
   :profiles {:uberjar {:aot :all}})

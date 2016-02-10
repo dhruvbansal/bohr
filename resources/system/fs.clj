@@ -69,9 +69,9 @@
   (parsed-df-output
    "-l -k"
    [[:name        identity]
-    [:bytes.total #(* 1024 (Integer/parseInt %))]
-    [:bytes.used  #(* 1024 (Integer/parseInt %))]
-    [:bytes.free  #(* 1024 (Integer/parseInt %))]
+    [:bytes.total 1024]
+    [:bytes.used  1024]
+    [:bytes.free  1024]
     [nil          identity]
     [:mountpoint  identity]]))
 
@@ -79,9 +79,9 @@
   (parsed-df-output
    "-l -i"
    [[:name         identity]
-    [:inodes.total #(Integer/parseInt %)]
-    [:inodes.used  #(Integer/parseInt %)]
-    [:inodes.free  #(Integer/parseInt %)]
+    [:inodes.total :long]
+    [:inodes.used  :long]
+    [:inodes.free  :long]
     [nil         identity]
     [:mountpoint identity]]))
 
@@ -99,12 +99,12 @@
   (parsed-df-output
    "-l -k"
    [[:name        identity]
-    [:bytes.total #(* 1024 (Integer/parseInt %))]
-    [:bytes.used  #(* 1024 (Integer/parseInt %))]
-    [:bytes.free  #(* 1024 (Integer/parseInt %))]
+    [:bytes.total 1024]
+    [:bytes.used  1024]
+    [:bytes.free  1024]
     [nil          identity]
-    [:inodes.used #(Integer/parseInt %)]
-    [:inodes.free #(Integer/parseInt %)]
+    [:inodes.used :long]
+    [:inodes.free :long]
     [nil          identity]
     [:mountpoint  identity]]))
 

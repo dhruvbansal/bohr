@@ -3,6 +3,17 @@
             [clojure.string :as string])
   (:use bohr.helpers))
 
+(defn- apply-converter [converter value]
+  (cond
+    (= :string  converter) value
+    (= :integer converter) (Integer/parseInt value)
+    (= :long    converter) (Long/parseLong value)
+    (= :float   converter) (Float/parseFloat value)
+    (= :double  converter) (Double/parseDouble value)
+    (integer?   converter) (* converter (Long/parseLong value))
+    (float?     converter) (* converter (Float/parseFloat value))
+    :else                  (converter value)))
+    
 (defn- extract-lines [string line-sep start-at end-at]
   (if end-at
     (subvec (string/split string line-sep) (- start-at 1) end-at)
@@ -11,7 +22,7 @@
 (defn- parse-properties-line [raw-line transform-raw-line col-sep converter]
   (let [[property-name property-value]
         (string/split (transform-raw-line raw-line) col-sep 2)]
-    [property-name (converter property-value)]))
+    [property-name (apply-converter converter property-value)]))
 
 (defn- perhaps-translate [source mapping]
   (if mapping
@@ -50,7 +61,7 @@
        (let [[name converter]
              (nth converters index)]
          (if name
-           [name (converter raw-value)])))
+           [name (apply-converter converter raw-value)])))
      raw-values))))
 
 (defn parse-table [string converters & { :keys [line-sep start-at end-at transform-raw-line col-sep transform-row row-filter]
