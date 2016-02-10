@@ -66,18 +66,58 @@
               current-tags     (get observer :tags [])]
       ((get observer :instructions)))))
 
-(defn for-each-observer
-  "Iterate over all observers."
-  [f]
-  (doseq [[name observer] @observers]
-    (f name observer)))
+(defn- observer-patterns [runtime-options]
+  [(map #(re-pattern %) (get runtime-options :exclude-observer))
+   (map #(re-pattern %) (get runtime-options :include-observer))])
 
-(defn map-periodic-observers
-  "Map over all periodic observers."
-  [f]
-  (map
-   f
-   (filter (fn [[_ observer]] (get observer :ttl)) (seq @observers))))
+(defn- observer-allowed? [observer-name excluded-patterns included-patterns]
+  (cond
+    (and
+     (empty? excluded-patterns)
+     (empty? included-patterns))
+    true
+
+    (and
+     (not-empty excluded-patterns)
+     (empty? included-patterns))
+    (not-any?
+     #(re-find % (name observer-name))
+     excluded-patterns)
+
+    (and
+     (empty? excluded-patterns)
+     (not-empty included-patterns))
+    (some
+     #(re-find % (name observer-name))
+     included-patterns)
+
+    :else
+    (and
+     (some
+      #(re-find % (name observer-name))
+      included-patterns)
+     (not-any?
+      #(re-find % (name observer-name))
+      excluded-patterns))))
+
+(defn for-each-observer [runtime-options f]
+  (let [[excluded-patterns included-patterns]
+        (observer-patterns runtime-options)]
+    (doseq [[name observer] @observers]
+      (if (observer-allowed? name excluded-patterns included-patterns)
+        (f name observer)))))
+
+(defn map-periodic-observers [runtime-options f]
+  (let [[excluded-patterns included-patterns]
+        (observer-patterns runtime-options)]
+    (map
+     f
+     (filter
+      (fn [[name observer]]
+        (and
+         (observer-allowed? name excluded-patterns included-patterns)
+         (get observer :ttl)))
+      (seq @observers)))))
 
 (defn check-for-observers! []
   (if (not (observers?))

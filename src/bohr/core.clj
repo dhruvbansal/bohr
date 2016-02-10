@@ -24,12 +24,15 @@
 
 (defn- start! [runtime-options]
   (log/info "Taking initial readings")
-  (for-each-observer (fn [name _] (take-reading! name (make-observation name)))))
+  (for-each-observer
+   runtime-options
+   (fn [name _] (take-reading! name (make-observation name)))))
 
 (def pool (mk-pool))
 
-(defn- periodically-observe! []
+(defn- periodically-observe! [runtime-options]
   (map-periodic-observers
+   runtime-options
    (fn [[name observer]]
      (let [ttl-in-ms (* 1000 (get observer :ttl))]
        (every
@@ -40,7 +43,7 @@
 
 (defn- loop! [runtime-options]
   (log/info "Entering main loop!")
-  (let [schedules (periodically-observe!)]
+  (let [schedules (periodically-observe! runtime-options)]
     (try
       ;; For some reason, this `doseq' block must be here in order for
       ;; the timers to run...perhaps because they need to be

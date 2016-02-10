@@ -4,14 +4,23 @@
   (:use     [clojure.string :only [join]]
             bohr.log))
 
+(defn- option-incrementer [current-options current-option-id current-option-value]
+  (update-in current-options [current-option-id] inc))
+
+(defn- option-appender [current-options current-option-id current-option-value]
+  (update-in current-options [current-option-id] conj current-option-value))
+  
 (def  ^{:private true} default-cli-options { :loop false })
 
 (def  ^{:private true} cli-parser-options
   [
    ["-h" "--help"       "Print this help"                          :default false]
+   ["-v" "--verbose"    "Log DEBUG statements (repeat for TRACE)." :default 0 :assoc-fn option-incrementer]
+
+   ["-X" "--exclude-observer PATTERN" "Don't run observers with matching names.  Can be given more than once." :default [] :assoc-fn option-appender]
+   ["-I" "--include-observer PATTERN" "Only run observers with matching names.  Can be given more than once."  :default [] :assoc-fn option-appender]
+
    ["-l" "--loop"       "Run continuously, updating all TTLs"      :default false]
-   ["-v" "--verbose"    "Log DEBUG statements (repeat for TRACE)." :default 0
-    :assoc-fn  (fn [m k _] (update-in m [k] inc))]
    ])
 
 (defn- usage [options-summary]
@@ -86,7 +95,6 @@ dies.  Silly guy."
         runtime-options (merge default-log-options default-cli-options options)]
     ;; set logger here b/c we can use it for errors
     (set-bohr-logger! runtime-options)
-    
     (cond
       (:help runtime-options) (exit 1 (usage summary))
       errors                  (exit 2 (log-errors errors))

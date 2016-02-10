@@ -46,11 +46,16 @@
      (extract-lines string line-sep start-at end-at)))
    translation))
 
-(defn- parse-table-line [raw-line transform-raw-line col-sep]
-  (string/split
-   (transform-raw-line raw-line)
-   col-sep))
-
+(defn- parse-table-line [raw-line transform-raw-line col-sep column-count]
+  (if column-count
+    (string/split
+     (transform-raw-line raw-line)
+     col-sep
+     column-count)
+    (string/split
+     (transform-raw-line raw-line)
+     col-sep)))
+    
 (defn- map-table-line [raw-values converters]
   (into
    {}
@@ -64,7 +69,7 @@
            [name (apply-converter converter raw-value)])))
      raw-values))))
 
-(defn parse-table [string converters & { :keys [line-sep start-at end-at transform-raw-line col-sep transform-row row-filter]
+(defn parse-table [string converters & { :keys [line-sep start-at end-at transform-raw-line col-sep transform-row row-filter column-count]
                              :or {line-sep #"\n"
                                   start-at 1
                                   transform-raw-line #(string/trim %)
@@ -79,7 +84,7 @@
     (map
      (fn [raw-line]
        (map-table-line
-        (parse-table-line raw-line transform-raw-line col-sep)
+        (parse-table-line raw-line transform-raw-line col-sep column-count)
         converters))
      (extract-lines string line-sep start-at end-at)))))
 
