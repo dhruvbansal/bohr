@@ -9,6 +9,7 @@
    bohr.dsl   
    bohr.scripts
    bohr.cli
+   bohr.config   
    bohr.summary
    )
   (:gen-class))
@@ -18,7 +19,8 @@
   (doseq [dependent (downstream-of name)]
     (refresh-reading! dependent)))
 
-(defn- populate! [input-paths]
+(defn- populate! [input-paths runtime-options]
+  (read-bundled-inputs! runtime-options)
   (read-inputs! input-paths)
   (check-undefined-dependencies! (observer-names)))
 
@@ -60,7 +62,8 @@
 (defn- boot! [input-paths runtime-options]
   (try
     (log/debug "Bohr is booting")
-    (populate! input-paths)
+    (load-config! runtime-options)
+    (populate! input-paths runtime-options)
     (check-for-observers!)
     (if (get runtime-options :loop)
       (do

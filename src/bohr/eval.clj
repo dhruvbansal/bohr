@@ -31,6 +31,7 @@
       (require '[clojure.java.io :as io])
       (use 'clojure.java.shell)
       (use 'bohr.helpers)
+      (use 'bohr.config)
       (use 'bohr.parsers)
       (use 'bohr.observers)
       (use 'bohr.notebook)

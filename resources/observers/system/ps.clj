@@ -72,11 +72,12 @@
      :desc metric-desc
      :tags metric-tags)))
         
-(static :ps.expected {})
+(defn- expected-processes []
+  (or (get-config :ps.expected) {}))
 
 (observe :ps :ttl 5 :tags ["system" "processes"] :prefix "ps"
          (let [table (process-table)]
            (submit-values (process-counts-by-state table))
-           (doseq [[process-name process-info] (seq (& :ps.expected))]
+           (doseq [[process-name process-info] (seq (expected-processes))]
              (submit-expected-process-state table process-name process-info))))
 

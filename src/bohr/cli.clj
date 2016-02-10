@@ -20,6 +20,8 @@
    ["-X" "--exclude-observer PATTERN" "Don't run observers with matching names.  Can be given more than once." :default [] :assoc-fn option-appender]
    ["-I" "--include-observer PATTERN" "Only run observers with matching names.  Can be given more than once."  :default [] :assoc-fn option-appender]
 
+   ["-c" "--config PATH" "Read configuration file at the given path" :default nil]
+
    ["-l" "--loop"       "Run continuously, updating all TTLs"      :default false]
    ])
 
@@ -98,5 +100,4 @@ dies.  Silly guy."
     (cond
       (:help runtime-options) (exit 1 (usage summary))
       errors                  (exit 2 (log-errors errors))
-      (= 0 (count arguments)) (exit 3 (log-errors (list "Must pass the path to a script (or directory of scripts) as the first argument.")))
       :else                   [arguments runtime-options])))

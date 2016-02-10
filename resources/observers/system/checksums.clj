@@ -33,8 +33,9 @@
      :desc metric-desc
      :tags metric-tags)))
         
-(static :checksum.expected [])
+(defn- checksum-files []
+  (or (get-config :checksum.files) []))
 
 (observe :checksums :ttl 5 :tags ["system" "checksums"] :prefix "checksum"
-         (doseq [path-info (& :checksum.expected)]
+         (doseq [path-info (checksum-files)]
            (submit-file-checksum path-info)))

@@ -1,7 +1,8 @@
 (ns bohr.scripts
   (:require [clojure.java.io :as io]
             [clojure.tools.logging :as log])
-  (:use bohr.eval))
+  (:use bohr.eval
+        bohr.config))
 
 (defn- read-script! [file]
   (log/debug "Loading Bohr script at" (.getPath file))
@@ -38,3 +39,20 @@
 (defn read-inputs! [input-paths]
   (doseq [input-path input-paths]
     (read-input! input-path)))
+
+(defn read-bundled-inputs! [runtime-options]
+  ;; FIXME add filtering here
+  (doseq [observer-path [
+                         "os"               
+                         "self"             
+                         "system/uptime"    
+                         "system/cpu"       
+                         "system/memory"    
+                         "system/users"     
+                         "system/fs"        
+                         "system/disk"      
+                         "system/net"       
+                         "system/ps"        
+                         "system/checksums"
+                         ]]
+    (read-script! (bohr-resource-path "observers" (str observer-path ".clj")))))
