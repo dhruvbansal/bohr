@@ -23,6 +23,7 @@
    ["-c" "--config PATH" "Read configuration file/dir at the given path.  Can be given more than once." :default [] :assoc-fn option-appender ]
 
    ["-l" "--loop"       "Run continuously, updating all TTLs"      :default false]
+   ["-V" "--version"    "Print version and exit"      :default false]
    ])
 
 (defn- usage [options-summary]

@@ -56,12 +56,17 @@
         (doseq [schedule schedules] (stop schedule))
         (throw e)))))
 
+(defn- print-version-and-exit! []
+  (println (System/getProperty "bohr.version"))
+  (exit 0))
+
 (defn- shutdown! []
   (exit 0))
 
 (defn- boot! [input-paths runtime-options]
   (try
     (log/debug "Bohr is booting")
+    (if (get runtime-options :version) (print-version-and-exit!))
     (load-config! runtime-options)
     (populate! input-paths runtime-options)
     (check-for-observers!)
