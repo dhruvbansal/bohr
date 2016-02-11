@@ -18,7 +18,7 @@
 
 (defn setup-script-namespace
   ([]
-   (setup-script-namespace (gensym)))
+   (setup-script-namespace (gensym "bohr")))
   ([namespace]
    (do 
      (binding [*ns* *ns*]
