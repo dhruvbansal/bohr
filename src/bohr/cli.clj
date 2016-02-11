@@ -20,7 +20,7 @@
    ["-X" "--exclude-observer PATTERN" "Don't run observers with matching names.  Can be given more than once." :default [] :assoc-fn option-appender]
    ["-I" "--include-observer PATTERN" "Only run observers with matching names.  Can be given more than once."  :default [] :assoc-fn option-appender]
 
-   ["-c" "--config PATH" "Read configuration file at the given path" :default nil]
+   ["-c" "--config PATH" "Read configuration file/dir at the given path.  Can be given more than once." :default [] :assoc-fn option-appender ]
 
    ["-l" "--loop"       "Run continuously, updating all TTLs"      :default false]
    ])

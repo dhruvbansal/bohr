@@ -3,30 +3,59 @@
             [clojure.tools.logging :as log]
             [clj-yaml.core :as yaml]))
 
-(def bohr-root
-  (.getCanonicalPath
-   (io/file
-    (.getParent (io/file *file*))
-    "..")))
-
-(defn bohr-path [& args]
-  (apply
-   io/file
-   (concat [bohr-root] args)))
-
-(defn bohr-resource-path [& args]
-  (apply
-   bohr-path
-   (concat ["resources"] args)))
-
 (def ^{:private true} bohr-config (atom {}))
 
+(defn- read-config-file [file]
+  (log/debug "Reading Bohr configuration at" (.getPath file))
+  (yaml/parse-string (slurp file)))
+
+(defn- read-config-directory [dir]
+  (log/debug "Reading Bohr configuration directory at" (.getPath dir))
+  (map
+   #(read-config-file (io/file dir %))
+   (filter
+    #(re-find #"\.ya?ml" %)
+    (.list dir))))
+
+(defn- read-config-path [path]
+  (let [file (io/file path)]
+    (cond
+      (not (.exists file))
+      (throw
+       (ex-info
+        (format "No such file or directory: %s" path)
+        {:bohr true :type :bohr-no-such-input :path path}))
+
+      (.isDirectory file) (read-config-directory file)
+      :else               (read-config-file file))))
+
+(defn- merge-configs [configs]
+  (apply
+   merge-with
+   (fn [earlier-value later-value]
+     (cond
+       (and
+        (map? earlier-value)
+        (map? later-value))
+       (merge earlier-value later-value)
+       
+       (and
+        (or (vector? earlier-value) (list? earlier-value))
+        (or (vector? later-value)   (list? later-value)))
+       (concat earlier-value later-value)
+       
+       :else later-value))
+   configs))
+
 (defn load-config! [runtime-options]
-  (let [config-path (get runtime-options :config)]
-    (if config-path
-      (do
-        (log/debug "Loading Bohr configuration at" config-path)
-        (swap! bohr-config merge (yaml/parse-string (slurp config-path)))))))
+  (let [config-paths (or (get runtime-options :config) [])]
+    (reset!
+     bohr-config
+     (merge-configs
+      (flatten
+       (concat
+        [@bohr-config]
+        (map read-config-path config-paths)))))))
 
 (defn get-config [key]
   (get @bohr-config key))

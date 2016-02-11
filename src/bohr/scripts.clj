@@ -55,4 +55,6 @@
                          "system/ps"        
                          "system/checksums"
                          ]]
-    (read-script! (bohr-resource-path "observers" (str observer-path ".clj")))))
+    (read-script!
+     (io/resource
+      (format "observers/%s.clj" observer-path)))))
