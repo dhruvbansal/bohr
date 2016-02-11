@@ -13,8 +13,13 @@
                  [table "0.5.0"]
                  ;; [riemann-clojure-client "0.4.2"]
                  [clj-yaml "0.4.0"]
+                 [clj-yaml "0.4.0"]
                  ]
   :main ^:skip-aot bohr.core
-  :target-path "target/%s"
+  :target-path "target"
+  
+  :plugins [[lein-bin "0.3.4"]]
+  :bin {:name "bohr"}
+
 
   :profiles {:uberjar {:aot :all}})
