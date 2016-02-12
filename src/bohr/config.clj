@@ -3,7 +3,7 @@
             [clojure.tools.logging :as log]
             [clj-yaml.core :as yaml]))
 
-(def ^{:private true} bohr-config (atom {}))
+(def ^{:private true} bohr-config (atom {:bohr {} }))
 
 (defn- read-config-file [file]
   (log/debug "Reading Bohr configuration at" (.getPath file))
@@ -40,8 +40,7 @@
        (merge earlier-value later-value)
        
        (and
-        (or (vector? earlier-value) (list? earlier-value))
-        (or (vector? later-value)   (list? later-value)))
+        (seq? earlier-value) (seq? later-value))
        (concat earlier-value later-value)
        
        :else later-value))

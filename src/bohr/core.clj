@@ -20,9 +20,10 @@
     (refresh-reading! dependent)))
 
 (defn- populate! [input-paths runtime-options]
-  (read-bundled-inputs! runtime-options)
+  (read-bundled-observers! runtime-options)
   (read-inputs! input-paths)
-  (check-undefined-dependencies! (observer-names)))
+  (check-undefined-dependencies! (observer-names))
+  (read-bundled-journals! runtime-options))
 
 (defn- start! [runtime-options]
   (log/info "Taking initial readings")

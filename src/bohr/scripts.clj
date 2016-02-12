@@ -40,8 +40,12 @@
   (doseq [input-path input-paths]
     (read-input! input-path)))
 
-(defn read-bundled-inputs! [runtime-options]
-  ;; FIXME add filtering here
+(defn- read-bundled-observer! [path]
+  (read-script!
+   (io/resource
+    (format "observers/%s.clj" path))))
+
+(defn- read-all-bundled-observers! []
   (doseq [observer-path [
                          "os"               
                          "self"             
@@ -55,6 +59,27 @@
                          "system/ps"        
                          "system/checksums"
                          ]]
-    (read-script!
-     (io/resource
-      (format "observers/%s.clj" observer-path)))))
+    (read-bundled-observer! observer-path)))
+  
+(defn read-bundled-observers! [runtime-options]
+  (let [observers
+        (get (or (get-config :bohr) {}) :observers)]
+    (cond
+      (or (nil? observers)
+          (= true observers))
+      (read-all-bundled-observers!)
+      
+      (seq? observers)
+      (doseq [observer-path observers]
+        (println "READING" observer-path)
+        (read-bundled-observer! observer-path)))))
+
+(defn- read-bundled-journal! [path]
+  (read-script!
+   (io/resource
+    (format "journals/%s.clj" path))))
+
+(defn read-bundled-journals! [runtime-options]
+  (doseq [journal-path
+          (get (or (get-config :bohr) {}) :journals)]
+    (read-bundled-journal! journal-path)))
