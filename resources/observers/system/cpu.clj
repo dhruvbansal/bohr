@@ -1,3 +1,7 @@
+(def cpu-clock-tick
+  (Float/parseFloat
+   (sh-output "getconf CLK_TCK")))
+
 (defn- cpu-count-linux []
   (count
    (filter
@@ -39,25 +43,24 @@
      :5  { :value (nth load-average-info 1) :desc "Average # of running processes (last 5 min.)"}
      :15 { :value (nth load-average-info 2) :desc "Average # of running processes (last 15 min.)"}}))
 
-(defn- util-linux []
-  (let [util-info
+(defn- time-linux []
+  (let [strings
         (string/split (first (string/split-lines (procfile-contents "stat"))) #" +")
         
-        util-names
+        names
         [:user :nice :system :idle :iowait :irq :softirq :steal :guest :guest-nice]
-        
-        util-values
-        (map-indexed
-         (fn [index name] (Integer/parseInt (nth util-info (+ index 1))))
-         util-names)
-        
-        total-util
-        (apply + util-values)
 
-        normalized-util-values
-        (map #(* 100.0 (float (/ % total-util))) util-values)
-        ]
-    (zipmap util-names normalized-util-values)))
+        cpus
+        (cpu-count)
+
+        times
+        (map-indexed
+         (fn [index name]
+           (/ 
+            (Integer/parseInt (nth strings (+ index 1)))
+            (* cpus cpu-clock-tick)))
+         names)]
+    (zipmap names times)))
 
 (def top-cpu-usage-regexp-mac #"CPU usage: +([\.\d]+)% +user, +([\.\d]+)% +sys, +([\.\d]+)% +idle")
 
@@ -77,12 +80,8 @@
            (+ 1 index)))])
       [:user :system :idle]))))
 
-(defn- util []
-  (annotate-values
-   (case-os
-    "Linux" (util-linux)
-    "Mac"   (util-mac))
-   {
+(def time-annotations
+  {
     :user         { :desc "Time spent in user mode" }
     :nice         { :desc "Time spent in user mode with low priority (nice)" }
     :system       { :desc "Time spent in system mode" }
@@ -93,13 +92,32 @@
     :steal        { :desc "Time stolen (spent in other OS when running in a VM)" }
     :guest        { :desc "Time spent running a VM" }
     :guest-nice   { :desc "Time spent running a niced guest" }
-    }))
-  
-(observe :cpu.count
-         (cpu-count))
+    })
 
+(def util-annotations
+  {
+    :user         { :desc "% of time spent in user mode" }
+    :system       { :desc "% of time spent in system mode" }
+    :idle         { :desc "% of time spent in the idle task." }
+    })
+
+(defn- cpu-time []
+  (annotate-values
+   (case-os
+    "Linux" (time-linux))
+   time-annotations))
+
+(defn- cpu-util []
+  (annotate-values
+   (case-os
+    "Mac" (util-mac))
+   util-annotations))
+  
 (observe :cpu.load :ttl 5, :tags ["system", "cpu"] :prefix "cpu.load"
          (submit-values (load-average)))
 
 (observe :cpu.util :ttl 5, :tags ["system", "cpu"] :prefix "cpu.util" :units "%"
-         (submit-values (util)))
+         (submit-values (cpu-util)))
+
+(observe :cpu.time :ttl 5, :tags ["system", "cpu", "counter"] :prefix "cpu.time" :units "s"
+         (submit-values (cpu-time)))
