@@ -1,0 +1,417 @@
+* Bohr
+
+  [[https://en.wikipedia.org/wiki/Niels_Bohr][Bohr]] is a scientist who continuously observes your system and
+  submits his results to journals which publish them to data stores or
+  other services.
+
+  Jump to:
+  
+  - [[#installation][Installation]]
+  - [[#usage][Usage]]
+  - [[#configuration][Configuration]]    
+  - [[#observers][Available Observers]]
+  - [[#journals][Available Journals]]
+  - [[#customizing][Customizing Bohr]]
+  - [[#contributing][Contributing to Bohr]]
+
+  Bohr *does not* store, downsample, plot/graph, index, alert on, or
+  analyze any of its observations.  Instead, Bohr focuses on:
+
+  - Reliability :: The collection of metrics is the first step in a
+                   long-chain of systems and code supporting
+                   business-critical monitoring and alerting.  If it
+                   fails, everything downstream of it fails, so Bohr
+                   tries to keep observing, no matter what.
+		   
+  - Transparency :: It's easy to tell what observations Bohr is making
+                    for any system.
+		    
+  - Modularity :: Bohr lets you choose include and exclude
+                  observations with fine-grained control.
+		  
+  - Extensibility :: Bohr can be extended via a Clojure DSL to make
+                     new, custom observations of your systems.
+		     
+  - Efficiency :: Bohr consumes minimal resources as it runs.
+		  
+  - Portability :: Bohr runs on many different systems and uses
+                   system-specific methods to make its observations.
+		   
+  - Simplicity :: Bohr is packaged as a single, self-contained,
+                  executable Java jar and auto-discovers common
+                  settings.
+		  
+  Tools similar to Bohr include:
+
+  - [[http://metrics.dropwizard.io/metrics][metrics]] :: Very similar, more mature, but written in Java
+  - [[https://github.com/influxdata/telegraf][telegraf]] :: Very similar but written in Go
+  - [[https://collectd.org/][collectd]] :: Similar aims but greater scope, old ecosystem
+  - [[https://github.com/riemann/riemann-tools][riemann-tools]] :: Similar but not extensible at runtime and specific to Riemann
+    
+** Overview
+
+*** Design
+
+   Bohr is a self-contained program intended to be run on any host
+   that needs monitoring or has services needing monitoring.
+
+   Bohr processes on different hosts do not need to communicate with
+   each other in any way.  Instead, each should be configured to
+   publish its observations to a downstream data storage or processing
+   system.
+
+   Bohr was written in Clojure for two major reasons:
+
+   - the JVM
+     - allows porting across different runtimes (Windows, OS X, Linux,
+       &c.)
+     - allows simple packaging as a self-executable JAR file
+     - connects to JMX directly, making it possible to observe (the
+       plethora of) Java-based services out there
+   - LISP
+     - has =eval= allowing Bohr to extend itself dynamically at
+       runtime without recompilation
+     - has permissive syntax & macros for Bohr's DSL
+
+*** Architecture
+   
+   Bohr has three central concepts:
+
+   - Observation :: Measurement of the host or one of its services.
+                    Each observation has a:
+		    
+     - name :: A string, typically dot-separated (e.g. -
+               =mem.util.free=). (*required*)
+       
+     - timestamp :: When the observation was made. (*required*)
+                    [Default: current time]
+       
+     - value :: Any string, numeric, or boolean value (or =nil=). [Default: =nil=]
+       
+     - units :: A string representing the units of =value=. [Default:
+                =nil=]
+       
+     - description :: A string decribing the observation. [Default:
+                      =nil=]
+       
+     - tags :: A list of string tags to associate with the
+               observation. [Default: =[]=]
+		    
+   - Observer :: Makes observations of some aspect of your system.
+                 Each observer has a:
+		 
+     - name :: A string describing that observer's subject
+               (e.g. =memory=). (*required*)
+	       
+     - period  :: An integer time in seconds between consecutive
+                  observations made by this observer. A =nil= value
+                  implies an observer which only runs once, at Bohr
+                  startup.  [Default: =nil=]
+		  
+     - units :: A string representing the default units of the value
+                of each observation made by this observer. [Default:
+                =nil=]
+       
+     - tags :: A list of string default tags to associate with each
+               observation made by this observer. [Default: =[]=]
+	       
+     - prefix :: A string to prefix each the name of each observation
+                 made by this observer (e.g. - =mem=). [Default:
+                 =nil=]
+		 
+   - Journal :: accepts submitted observations from observers and
+                publishes them to external services.  Each journal has
+                a:
+		
+     - name :: A string describing this journal's publishing target
+               (e.g. =riemann=). (*required*)
+		
+   Using Bohr effectively requires:
+
+   1) Choosing journals which publish to your environment's data
+      collection and/or processing services (see [[#journals][available journals]]
+      below).
+      
+   2) For the relevant aspects of your host and its services:
+      
+      a) Choosing built-in observers if available (see [[#observers][available observers]] below).
+      b) Writing your own observers in Bohr's DSL (see [[#customizing][customizing Bohr]] below).
+      
+   3) Deploying Bohr with an appropraite configuration file defining &
+      configuring these journals & observers (see [[#deployment][deployment]] below).
+     
+
+* Installation
+  :PROPERTIES:
+  :CUSTOM_ID: installation
+  :END:
+
+  For simplicity, Bohr is distributed as a single file which you can
+  download and run:
+
+#+BEGIN_SRC shell-script
+  $ curl https://s3.amazonaws.com/packages.perfect-timing.io/bohr/current/bohr > bohr
+  $ chmod +x bohr
+  $ ./bohr
+#+END_SRC
+
+** Production Deployments
+  :PROPERTIES:
+  :CUSTOM_ID: deployment
+  :END:
+
+   While running, Bohr does not daemonize itself or manage any of its
+   output.  It relies on system services such as upstart and
+   logrotate.  Example configuration files for such services are
+   provided in the [[file:examples/][examples]] directory.
+
+   An [[https://www.ansible.com/][Ansible]] role for installing Bohr is also available, see the
+   [[https://github.com/dhruvbansal/bohr-ansible-role][bohr-ansible-role]] repository.
+
+* Usage
+  :PROPERTIES:
+  :CUSTOM_ID: usage
+  :END:
+
+  Bohr's user interface is the command line program =bohr= (see
+  [[#installation][Installation]] above if you don't have =bohr= installed):
+
+#+BEGIN_SRC shell-script
+  $ bohr --help
+#+END_SRC
+
+  Bohr has two modes of operation:
+
+  - Default :: Bohr will make all his observations (see [[#configuration][Configuration]]
+               below) and print out his ready-to-publish values in a
+               human-readable table.  No observations will actually be
+               published downstream.
+    
+#+BEGIN_SRC shell-script
+  $ bohr
+#+END_SRC    
+    
+  - Loop :: Activated with the =--loop= option, Bohr will continuously
+            make observations and publish their results.
+    
+#+BEGIN_SRC shell-script
+  $ bohr --loop
+#+END_SRC
+
+** Version Information
+
+   Make Bohr print out its version with the =--version= option:
+
+#+BEGIN_SRC shell-script
+  $ bohr --version
+#+END_SRC
+   
+** Logging & Verbosity
+
+   Bohr uses the [[https://github.com/malcolmsparks/clj-logging-config][clj-logging-config]] library with its [[http://logging.apache.org/log4j/2.x/][log4j]] adapter.
+   By default, Bohr logs in =INFO= mode.  The =--verbose= (or =-v=)
+   option will make Bohr log in =DEBUG= mode, passing it more than
+   once will make Bohr log in =TRACE= mode:
+
+#+BEGIN_SRC shell-script
+  $ bohr ...
+  $ bohr --verbose ...
+  $ bohr -vv ...
+#+END_SRC
+
+** Filtering Observers
+  :PROPERTIES:
+  :CUSTOM_ID: filtering_observers
+  :END:
+
+   All Bohr observers have names (e.g. - =memory= or =cpu=) and Bohr
+   can be told to include or exclude observers at runtime via their
+   names:
+
+   - the =--exclude-observer= (=-X=) option will *not* run any
+     observers whose names match the given regular expression.
+     
+   - the =--include-observer= (=-I=) option will *only* run any
+     observers whose names match the given regular expression, and
+     *exclude* all others.
+     
+   Each of the above options can be given more than once to
+   include/exclude multiple observers (or observer patterns):
+
+#+BEGIN_SRC shell-script
+    $ bohr --exclude-observer='cpu'
+    $ bohr -I=cpu -I=memory
+    $ bohr -I='(cpu|memory)'   # same as above
+#+END_SRC
+
+   When both options are present, observers will only be run if they
+   match *some* =--include-observer= pattern and *no*
+   =--exclude-observer= patterns.
+
+   See the observation-level filtering options ([[#filtering_observations][below]]) for even more
+   fine-grained control.
+
+** Filtering Observations
+  :PROPERTIES:
+  :CUSTOM_ID: filtering_observations
+  :END:
+
+   In addition to filtering at the observer-level ([[#filtering_observers][above]]), Bohr also
+   allows filtering at the level of observations:
+
+   - the =--exclude-observation= (=-x=) option will *not* publish any
+     observations whose names match the given regular expression.
+     
+   - the =--include-observation= (=-i=) option will *only* publish
+     observerations whose names match the given regular expression,
+     and *exclude* all others.
+     
+   Just like at the observer-level ([[#filtering_observers][above]]), the
+   =--include-observation= and =--exclude-observation= can both be
+   passed more than once and, when both options are present,
+   observations will only be run if they match *some*
+   =--include-observation= pattern and *no* =--exclude-observation=
+   pattern:
+
+#+BEGIN_SRC shell-script
+    $ bohr --exclude-observation='/data'
+    $ bohr -i='(cpu|memory).util'
+#+END_SRC
+
+   Combining observer- and observation-level filters together allows
+   for fine-grained control over both which observations are made and
+   which are published.
+   
+* Configuration
+  :PROPERTIES:
+  :CUSTOM_ID: configuration
+  :END:
+
+  Bohr accepts several configuration options via the command-line (see
+  [[#usage][usage]] above) but more complex configuration for specific observers
+  or journals is best provided via a [[http://yaml.org/][YAML]] configuration file.
+
+  Tell Bohr to use a configuration file by passing the =--config=
+  option to the =bohr= command:
+
+#+BEGIN_SRC shell-script
+  $ bohr --config=/path/to/config.yml ...
+#+END_SRC
+
+  Bohr's configuration file can be used to:
+
+  - select which available observers and journals are used
+  - provide observer- or journal-specific configuration options
+    (e.g. - hosts and ports).
+    
+  A complete [[file:examples/bohr.yml][example configuration file]] lists available configuration
+  options.  [[#observers][Observer-]] and [[#journals][journal-specific]] configuration options are
+  also repeated in the sections below.
+  
+* Available Observers
+  :PROPERTIES:
+  :CUSTOM_ID: observers
+  :END:
+
+   Bohr knows how to observe the following aspects of your systems:
+   
+* Available Journals
+  :PROPERTIES:
+  :CUSTOM_ID: journals
+  :END:
+  
+  Bohr knows how to submit to the following services:
+
+  - [[http://riemann.io/][Riemann]]
+  - [[https://influxdata.com/][InfluxDB]] (coming soon)
+  - [[https://www.elastic.co/][ElasticSearch]] (coming soon)
+  - [[https://www.mongodb.org/][MongoDB]] (coming soon)
+  - [[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol][HTTP(S)]] (coming soon)
+  - [[https://en.wikipedia.org/wiki/Syslog][syslog]] (coming soon)
+  - [[http://graphite.wikidot.com/][Graphite]] (coming soon)
+  - [[https://www.elastic.co/products/logstash][Logstash]] (coming soon)
+  - a local file (coming soon)
+
+* Customizing Bohr
+  :PROPERTIES:
+  :CUSTOM_ID: customizing
+  :END:
+  
+  Bohr can be extended in two ways:
+
+  - by writing new observers in Bohr's DSl
+  - by writing new journals
+* Contributing to Bohr
+
+  Bohr still needs a lot of work.  Much of this README
+  is...aspirational at the moment ;)
+
+  To contribute, follow the instructions below on how to develop on
+  Bohr and then create a pull request!
+  
+** Developer Installation & Commands
+
+   Bohr uses the [[http://leiningen.org/][Leiningen]] build tool.  Once you have the =lein=
+   command installed, checkout a copy of the Bohr source:
+
+#+BEGIN_SRC shell-script
+  $ git clone https://github.com/dhruvbansal/bohr
+  $ cd bohr
+#+END_SRC
+
+   Useful Leiningen commands include:
+
+   - =run= :: Will run the =bohr= command from the current source (not
+              the compiled classes).  Make sure to include the
+              double-hyphen (=--=) to separate Leiningen options from
+              options passed to =bohr=:
+	      
+#+BEGIN_SRC shell-script
+  $ lein run -- --help
+  $ lein run -- --loop
+#+END_SRC
+
+   - =repl= :: Starts a Clojure [[https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop][REPL]] in the ='bohr.core= namespace.
+     
+#+BEGIN_SRC shell-script
+  $ lein repl
+...
+bohr.core=> (println (observer-count))
+0
+nil
+bohr.core=>
+#+END_SRC
+
+   - =bin= :: Compiles and packages Bohr into a single executable JAR
+              file:
+	      
+#+BEGIN_SRC shell-script
+  $ lein bin
+  ...
+  $  ./target/bohr --help
+#+END_SRC
+
+** Repository Layout
+
+   The core code for Bohr lives in the =src/bohr= directory just like
+   in any other Clojure project.  This core defines the central
+   concepts of Bohr (observers, journals, configuration, logging, &c.)
+   but not any particular implementations of observers or journals.
+
+   Available observer and journal implementations are instead defined
+   in the =resources= directory.  These files will not be compiled
+   when Bohr's core is compiled but they will be contained within the
+   self-executable JAR file Bohr is distributed as.  They are loaded
+   from this JAR file at runtime, if required.
+
+   Development on Bohr consists then of two distinct kinds of
+   activity:
+
+   - working on Bohr core itself in =src/bohr=
+   - implementing particular observers and/or journals in =resources=
+
+* Legal Information
+
+Copyright © 2016 Dhruv Bansal
+
+Distributed under the Apache Public License version 2.0.

@@ -1,0 +1,29 @@
+---
+
+# == Overview ==
+#
+# This is an example YAML configuration file for Bohr.  The
+# uncommented parts are identical to Bohr's default configuration.
+# Alternatives are provided via commented sections.
+
+# == Journals ==
+#
+# Declare which journals Bohr should use. Journal-specific
+# configurations are below.
+
+bohr:
+  journals:
+    - console
+    # - riemann
+
+#
+# == Riemann Journal ==
+#
+# Configuration values for the 'riemann' key are passed directly to
+# the official Riemann Clojure client.
+#
+# See https://github.com/riemann/riemann-clojure-client for details.
+# Default value is below
+
+riemann:
+    host: localhost
