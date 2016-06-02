@@ -57,7 +57,7 @@
         (map-indexed
          (fn [index name]
            (/ 
-            (Integer/parseInt (nth strings (+ index 1)))
+            (Long/parseLong (nth strings (+ index 1)))
             (* cpus cpu-clock-tick)))
          names)]
     (zipmap names times)))
