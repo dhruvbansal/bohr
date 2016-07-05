@@ -1,10 +1,7 @@
-;;;; Defines the core functions which enable the Bohr DSL.
-
-(ns bohr.dsl
+(ns bohr.dsl.macros
   (:require [clojure.tools.logging :as log]
             [clojure.string :as string])
-  (:use bohr.notebook
-        bohr.observers
+  (:use bohr.observers
         bohr.journals))
 
 (defn- extract-observer-arguments

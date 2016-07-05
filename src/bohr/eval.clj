@@ -71,14 +71,13 @@
     (require '[clj-time.format :as time-format])
     (require '[clojure.java.io :as io])
     (use 'clojure.java.shell)
-    (use 'bohr.helpers)
     (use 'bohr.config)
-    (use 'bohr.parsers)
     (use 'bohr.observers)
-    (use 'bohr.notebook)
     (use 'bohr.journals)
-    (use 'bohr.dsl)
-    (use 'bohr.os)
+    (use 'bohr.dsl.macros)
+    (use 'bohr.dsl.os)
+    (use 'bohr.dsl.parsers)
+    (use 'bohr.dsl.helpers)
     (eval form)))
 
 (defn eval-script-content!

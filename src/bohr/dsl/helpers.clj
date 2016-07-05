@@ -1,7 +1,7 @@
 ;;;; Contains helper functions intended to be used from within the
 ;;;; Bohr DSL.
 
-(ns bohr.helpers
+(ns bohr.dsl.helpers
   (:require [clojure.string  :as string]
             [clojure.java.io :as io])
   (:use clojure.java.shell

@@ -9,11 +9,11 @@
 ;;;     "Darwin" (...)
 ;;;     ...
 
-(ns bohr.os
+(ns bohr.dsl.os
   (:require [clojure.tools.logging :as log])
-  (:use bohr.helpers
+  (:use bohr.dsl.helpers
         bohr.observers
-        bohr.parsers))
+        bohr.dsl.parsers))
 
 (def kernel-name      (sh-output "uname -s"))
 (def kernel-release   (sh-output "uname -r"))

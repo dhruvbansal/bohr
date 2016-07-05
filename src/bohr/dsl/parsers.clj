@@ -1,7 +1,7 @@
-(ns bohr.parsers
+(ns bohr.dsl.parsers
   (:require [clojure.tools.logging :as log]
             [clojure.string :as string])
-  (:use bohr.helpers))
+  (:use bohr.dsl.helpers))
 
 (defn- apply-converter [converter value]
   (cond
