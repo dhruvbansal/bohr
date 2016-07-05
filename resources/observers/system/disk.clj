@@ -8,7 +8,7 @@
    :writes-merged    { :desc "Number of writes merged" :tags ["counter"]}
    :bytes.written    { :desc "Number of bytes written" :units "B" :tags ["counter"]}
    :time.write       { :desc "Time spent writing" :units "ms" :tags ["counter"]}
-   :current-io       { :desc "Number of current IOs"}
+   :current-io       { :desc "Number of current IOs" :tags ["metric"]}
    :time.io          { :desc "Time spent on IO" :units "ms" :tags ["counter"]}
    :time.io-weighted { :desc "Weighted IO time" :units "ms" :tags ["counter"]}
    })
@@ -48,6 +48,6 @@
   (case-os
    "Linux" (disks-linux)))
 
-(observe :disk :ttl 5 :tags ["system" "disk"] :prefix "disk"
+(observe :disk :ttl 5 :prefix "disk"
          (doseq [[disk-name disk] (seq (disks))]
            (submit-many disk :suffix (format "[%s]" disk-name))))

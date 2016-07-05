@@ -64,7 +64,7 @@
 
 (def top-cpu-usage-regexp-mac #"CPU usage: +([\.\d]+)% +user, +([\.\d]+)% +sys, +([\.\d]+)% +idle")
 
-(defn- util-mac []
+(defn- time-mac []
   (let [percentages
         #(re-find
           top-cpu-usage-regexp-mac
@@ -80,44 +80,36 @@
            (+ 1 index)))])
       [:user :system :idle]))))
 
-(def time-annotations
+(def time-annotations-linux
   {
-    :user         { :desc "Time spent in user mode" }
-    :nice         { :desc "Time spent in user mode with low priority (nice)" }
-    :system       { :desc "Time spent in system mode" }
-    :idle         { :desc "Time spent in the idle task." }
-    :iowait       { :desc "Time waiting for I/O to complete" }
-    :irq          { :desc "Time servicing interrupts" }
-    :softirq      { :desc "Time servicing softirqs" }
-    :steal        { :desc "Time stolen (spent in other OS when running in a VM)" }
-    :guest        { :desc "Time spent running a VM" }
-    :guest-nice   { :desc "Time spent running a niced guest" }
+    :user         { :desc "Time spent in user mode" :units "s" :tags ["counter"] }
+    :nice         { :desc "Time spent in user mode with low priority (nice)" :units "s" :tags ["counter"] }
+    :system       { :desc "Time spent in system mode" :units "s" :tags ["counter"] }
+    :idle         { :desc "Time spent in the idle task" :units "s" :tags ["counter"] }
+    :iowait       { :desc "Time waiting for I/O to complete" :units "s" :tags ["counter"] }
+    :irq          { :desc "Time servicing interrupts" :units "s" :tags ["counter"] }
+    :softirq      { :desc "Time servicing softirqs" :units "s" :tags ["counter"] }
+    :steal        { :desc "Time stolen (spent in other OS when running in a VM)" :units "s" :tags ["counter"] }
+    :guest        { :desc "Time spent running a VM" :units "s" :tags ["counter"] }
+    :guest-nice   { :desc "Time spent running a niced guest" :units "s" :tags ["counter"] }
     })
 
-(def util-annotations
+(def time-annotations-mac
   {
-    :user         { :desc "% of time spent in user mode" }
-    :system       { :desc "% of time spent in system mode" }
-    :idle         { :desc "% of time spent in the idle task." }
-    })
+   :user         { :desc "Time spent in user mode"     :units "%" :tags ["metric"] }
+   :system       { :desc "Time spent in system mode"   :units "%" :tags ["metric"] }
+   :idle         { :desc "Time spent in the idle task" :units "%" :tags ["metric"] }
+   })
 
 (defn- cpu-time []
-  (annotate
-   (case-os
-    "Linux" (time-linux))
-   time-annotations))
+  (case-os
+   "Linux"
+   (annotate (time-linux) time-annotations-linux)
+   "Mac"
+   (annotate (time-mac) time-annotations-mac)))
 
-(defn- cpu-util []
-  (annotate
-   (case-os
-    "Mac" (util-mac))
-   util-annotations))
-  
-(observe :cpu.load :ttl 5, :tags ["system", "cpu"] :prefix "cpu.load"
+(observe :cpu.load :ttl 5, :prefix "cpu.load" :tags ["metric"]
          (submit-many (load-average)))
 
-(observe :cpu.util :ttl 5, :tags ["system", "cpu"] :prefix "cpu.util" :units "%"
-         (submit-many (cpu-util)))
-
-(observe :cpu.time :ttl 5, :tags ["system", "cpu", "counter"] :prefix "cpu.time" :units "s"
+(observe :cpu.time :ttl 5, :prefix "cpu.time"
          (submit-many (cpu-time)))

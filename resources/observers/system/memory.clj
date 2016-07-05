@@ -82,7 +82,7 @@
    "Linux" (util-from-usage usage [:buffers :cached :swap.cached :anon-pages])
    "Mac"   {}))
 
-(observe :memory :ttl 5 :tags ["system" "memory"] :prefix "mem"
+(observe :memory :ttl 5 :tags ["metric"] :prefix "mem"
          (let [usage (memory-usage)]
            (submit-many usage :units "B" :prefix "usage")
            (submit-many (memory-util usage) :units "%" :prefix "util")

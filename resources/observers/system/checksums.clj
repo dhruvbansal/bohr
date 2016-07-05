@@ -23,19 +23,16 @@
         (format "file[%s]" path)
 
         metric-desc
-        (format "MD5 checksum of %s" path)
-
-        metric-tags
-        (if (map? path-info) (get path-info :tags))]
+        (format "MD5 checksum of %s" path)]
     (submit
      metric-name
      (file-checksum path)
      :desc metric-desc
-     :tags metric-tags)))
-        
+     :tags ["last"])))
+
 (defn- checksum-files []
   (or (get-config :checksum.files) []))
 
-(observe :checksums :ttl 5 :tags ["system" "checksums"] :prefix "checksum"
+(observe :checksums :ttl 5 :prefix "checksum"
          (doseq [path-info (checksum-files)]
            (submit-file-checksum path-info)))

@@ -115,18 +115,20 @@
        (make-metric-name unit state filesystem false)
        (get filesystem (make-property-name unit state false))
        :desc (make-metric-description filesystem unit state)
-       :unit "B")
+       :unit "B"
+       :tags ["metric"])
       (if (not (= :total state))
         (submit
          (make-metric-name unit state filesystem true)
          (get filesystem (make-property-name unit state true))
          :desc (make-metric-description filesystem unit state)
-         :unit "%")))))
+         :unit "%"
+         :tags ["metric"])))))
 
 (defn- filesystems []
   (case-os
    "Linux" (filesystems-linux)
    "Mac"   (filesystems-mac)))
 
-(observe :fs :ttl 5 :tags ["system" "fs"] :prefix "fs"
+(observe :fs :ttl 5 :prefix "fs"
          (doseq [filesystem (filesystems)] (observe-filesystem filesystem)))

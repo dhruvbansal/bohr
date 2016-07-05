@@ -41,9 +41,6 @@
         metric-desc
         (format "State of process %s" (name expected-process-name))
 
-        metric-tags
-        (get expected-process-info :tags)
-
         user-pattern
         (re-pattern
          (if (map? expected-process-info)
@@ -70,14 +67,14 @@
        (get process :state)
        missing-process-state)
      :desc metric-desc
-     :tags metric-tags)))
+     :tags ["last"])))
         
 (defn- expected-processes []
   (or (get-config :ps.expected) {}))
 
-(observe :ps :ttl 5 :tags ["system" "processes"] :prefix "ps"
+(observe :ps :ttl 5 :prefix "ps"
          (let [table (process-table)]
-           (submit-many (process-counts-by-state table))
+           (submit-many (process-counts-by-state table) :tags ["metric"])
            (doseq [[process-name process-info] (seq (expected-processes))]
              (submit-expected-process-state table process-name process-info))))
 
