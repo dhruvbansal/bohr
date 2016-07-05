@@ -8,7 +8,6 @@
 ;;;     "Linux"  (...)
 ;;;     "Darwin" (...)
 ;;;     ...
-
 (let [kernel-name (sh-output "uname -s")]
   (static :kernel.name      kernel-name)
   (static :kernel.release   (sh-output "uname -r"))

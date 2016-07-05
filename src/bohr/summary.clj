@@ -57,4 +57,4 @@
   (log/debug "Producing summary")
   (if (memory-journal-publications?)
     (table (summary-table) :sort true :desc true)
-    (log/info "No metrics submitted")))
+    (log/info "No observers!")))

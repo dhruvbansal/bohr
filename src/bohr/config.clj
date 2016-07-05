@@ -1,15 +1,25 @@
+;;;; Bohr's configuration is a global map of values.
+;;;;
+
 (ns bohr.config
   (:require [clojure.java.io :as io]
             [clojure.tools.logging :as log]
             [clj-yaml.core :as yaml]))
 
+;; Bohr configuration.
 (def ^{:private true} bohr-config (atom {:bohr {} }))
 
-(defn- read-config-file [file]
+(defn- read-config-file
+  "Return the parsed contents of the given YAML `file` handle."
+  [file]
   (log/debug "Reading Bohr configuration at" (.getPath file))
   (yaml/parse-string (slurp file)))
 
-(defn- read-config-directory [dir]
+(defn- read-config-directory
+  "Read all YAML configuration files in the given `dir`.
+
+  Does not recurse through the directory."
+  [dir]
   (log/debug "Reading Bohr configuration directory at" (.getPath dir))
   (map
    #(read-config-file (io/file dir %))
@@ -17,7 +27,10 @@
     #(re-find #"\.ya?ml" %)
     (.list dir))))
 
-(defn- read-config-path [path]
+(defn- read-config
+  "Returns configuration from the given `path` which may be either a
+  file or a directory."
+  [path]
   (let [file (io/file path)]
     (cond
       (not (.exists file))
@@ -29,7 +42,12 @@
       (.isDirectory file) (read-config-directory file)
       :else               (read-config-file file))))
 
-(defn- merge-configs [configs]
+(defn- merge-configs
+  "Return the merged version of all the `configs`.
+
+  Tries to be intelligent about merging containers such as maps and
+  sequences vs 'objects' such as strings, numbers, &c."
+  [configs]
   (apply
    merge-with
    (fn [earlier-value later-value]
@@ -46,7 +64,13 @@
        :else later-value))
    configs))
 
-(defn load-config! [runtime-options]
+(defn load-config!
+  "Load configuration from the given `runtime-options`.
+
+  The `runtime-options` map should have a key `config` with the path
+  to a YAML configuration file or directory as its corresponding
+  value."
+  [runtime-options]
   (let [config-paths (or (get runtime-options :config) [])]
     (reset!
      bohr-config
@@ -54,7 +78,9 @@
       (flatten
        (concat
         [@bohr-config]
-        (map read-config-path config-paths)))))))
+        (map read-config config-paths)))))))
 
-(defn get-config [key]
+(defn get-config
+  "Return the value of the configuration `key`."
+  [key]
   (get @bohr-config key))

@@ -1,3 +1,5 @@
+;;;; Defines the core functions which enable the Bohr DSL.
+
 (ns bohr.dsl
   (:require [clojure.tools.logging :as log]
             [clojure.string :as string])
@@ -6,21 +8,36 @@
         bohr.journals
         bohr.dependencies))
 
-(defn & [name]
+(defn &
+  "Returns the value of the last reading for the observer of the given `name`.
+
+  Also registers a dependency on this observer from the observer it is
+  called within."
+  [name]
   (register-dependency! current-observer name)
-  (if (known-reading? name) (get-reading name)
+  (if (reading? name) (get-reading name)
       (do
         (take-reading! name (make-observation name))
         (get-reading name))))
 
-(defn- extract-observer-arguments [macro-form]
+(defn- extract-observer-arguments
+  "Helper function for extracting the arguments to pass to the
+  `define-observer!` function from within the `static` and `observe`
+  macros defined below."
+  [macro-form]
   (let [macro-vec   (apply vector macro-form)
         name        (nth macro-vec 1)
         options-vec (subvec macro-vec 2 (count macro-vec))
         options     (apply hash-map options-vec)]
     (vector name options)))
 
-(defmacro static [name value]
+(defmacro static
+  "Define an observer whose reading never expires.
+
+  A 'static' observer will make its reading when the script is first
+  loaded, prior to Bohr requesting more general observers to make
+  their first readings."
+  [name value]
   (let [[name options]
         (extract-observer-arguments (butlast &form))]
     `(let [initial-value# ~(last &form)]
@@ -29,7 +46,9 @@
          ~options
          (fn [] initial-value#)))))
 
-(defmacro observe [& args]
+(defmacro observe
+  "Define an observer."
+  [& args]
   (let [[name options]
         (extract-observer-arguments (butlast &form))]
     `(define-observer!

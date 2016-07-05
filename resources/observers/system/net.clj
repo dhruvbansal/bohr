@@ -33,7 +33,7 @@
     :row-filter
     #(not (re-find #"(lo)" (get % :name))))
    :delete-key true
-   :transform-row #(annotate-values % interface-annotations)))
+   :transform-row #(annotate % interface-annotations)))
 
 (defn- interfaces []
   (case-os
@@ -41,4 +41,4 @@
 
 (observe :net :ttl 5 :tags ["system" "net"] :prefix "net"
          (doseq [[interface-name interface] (seq (interfaces))]
-           (submit-values interface :suffix (format "[%s]" interface-name))))
+           (submit-many interface :suffix (format "[%s]" interface-name))))

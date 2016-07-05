@@ -77,7 +77,7 @@
 
 (observe :ps :ttl 5 :tags ["system" "processes"] :prefix "ps"
          (let [table (process-table)]
-           (submit-values (process-counts-by-state table))
+           (submit-many (process-counts-by-state table))
            (doseq [[process-name process-info] (seq (expected-processes))]
              (submit-expected-process-state table process-name process-info))))
 

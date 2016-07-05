@@ -49,7 +49,7 @@
     "Pages active" :active}))
 
 (defn- memory-usage []
-  (annotate-values
+  (annotate
    (case-os
     "Linux" (memory-usage-linux)
     "Mac"   (memory-usage-mac))
@@ -68,7 +68,7 @@
         (map
          #(* 100.0 (float (/ % total-usage)))
          util-usages)]
-    (annotate-values
+    (annotate
      (zipmap util-names normalized-usages)
      memory-usage-annotations)))
 
@@ -84,6 +84,6 @@
 
 (observe :memory :ttl 5 :tags ["system" "memory"] :prefix "mem"
          (let [usage (memory-usage)]
-           (submit-values usage :units "B" :prefix "usage")
-           (submit-values (memory-util usage) :units "%" :prefix "util")
-           (submit-values (cache-util usage) :units "%" :prefix "cache.util")))
+           (submit-many usage :units "B" :prefix "usage")
+           (submit-many (memory-util usage) :units "%" :prefix "util")
+           (submit-many (cache-util usage) :units "%" :prefix "cache.util")))

@@ -1,3 +1,15 @@
+;;;; This namespace ties together several parts of Bohr.
+;;;;
+;;;; It provides the the `-main` and `boot` functions which start the
+;;;; `bohr` process.
+;;;;
+;;;; It triggers instantiating the logger, reading configuration, and
+;;;; populating Bohr's observers & journals.
+;;;;
+;;;; It handles scheduling observers to refresh their readings in the
+;;;; future and acts as the nexus between observers, the notebook, and
+;;;; journals.
+
 (ns bohr.core
   (:require [clojure.tools.logging :as log])
   (:use
@@ -11,42 +23,67 @@
    bohr.cli
    bohr.config   
    bohr.summary
+   bohr.log
    )
   (:gen-class))
 
-(defn- refresh-reading! [name]
+(defn- refresh-reading!
+  "Refresh the reading for the observer of the given `name` and all
+  its dependents."
+  [name]
   (take-reading! name (make-observation name))
   (doseq [dependent (downstream-of name)]
     (refresh-reading! dependent)))
 
-(defn- populate! [input-paths runtime-options]
-  (read-bundled-observers! runtime-options)
-  (read-inputs! input-paths)
-  (check-undefined-dependencies! (observer-names))
-  (read-bundled-journals! runtime-options))
+(defn- populate!
+  "Populate Bohr's observers and journals from the given `input-paths`
+  and `runtime-options`.
 
-(defn- start! [runtime-options]
-  (log/info "Taking initial readings")
+  Will delegate to the functions:
+  - `load-bundled-observers!`
+  - `load-bundled-journals`
+  - `load-scripts!`"
+  [input-paths runtime-options]
+  (load-bundled-observers! runtime-options)
+  (load-bundled-journals! runtime-options)
+  (load-scripts! input-paths)
+  (warn-if-no-observers!)
+  (check-undefined-dependencies! (observer-names)))
+  
+(defn- start!
+  "Take initial readings from each observer."
+  [runtime-options]
+  (log/info "Taking initial readings...")
   (for-each-observer
    runtime-options
+   false ; want to include observers without TTLs
    (fn [name _] (take-reading! name (make-observation name)))))
 
 (def pool (mk-pool))
 
-(defn- periodically-observe! [runtime-options]
-  (map-periodic-observers
+(defn- create-observer-schedules!
+  "Schedules each observer with a TTL to refresh its reading periodically.
+
+  The sequence of schedules is returned."
+  [runtime-options]
+  (map-observers
    runtime-options
+   true ; only want observers with TTLs
    (fn [[name observer]]
      (let [ttl-in-ms (* 1000 (get observer :ttl))]
+       (log/debug (format "Scheduling observer %s to run every %ss" name (:ttl observer)))
        (every
         ttl-in-ms
         #(refresh-reading! name)
         pool
         :initial-delay ttl-in-ms)))))
 
-(defn- loop! [runtime-options]
-  (log/info "Entering main loop!")
-  (let [schedules (periodically-observe! runtime-options)]
+(defn- loop!
+  "Run forever, with each observer taking readings on schedule given
+  by its TTL."
+  [runtime-options]
+  (log/info "Periodically observing...")
+  (let [schedules (create-observer-schedules! runtime-options)]
     (try
       ;; For some reason, this `doseq' block must be here in order for
       ;; the timers to run...perhaps because they need to be
@@ -57,34 +94,45 @@
         (doseq [schedule schedules] (stop schedule))
         (throw e)))))
 
-(defn- print-version-and-exit! []
-  (println (System/getProperty "bohr.version"))
-  (exit 0))
+(defn- boot!
+  "Boot Bohr process.
 
-(defn- shutdown! []
-  (exit 0))
+  Takes the following steps:
 
-(defn- boot! [input-paths runtime-options]
+  1) Initiates the logger.
+  2) Loads configuration files.
+  3) Populates observers & journals.
+  4) Choose what happens:
+     a) If --loop was given, run forever, submitting observations to
+        journals.  If no journals were populated, defaults to the console
+        journal.
+     b) If --submit was given, run once, submitting initial
+        observations to journals.  If no journals were populated, defaults
+        to the console journal.
+     c) Otherwise run once and summarize all observations to console,
+        ignoring all journals."
+  [input-paths runtime-options]
+  (set-bohr-logger! runtime-options)
   (try
     (log/debug "Bohr is booting")
-    (if (get runtime-options :version) (print-version-and-exit!))
     (load-config! runtime-options)
     (populate! input-paths runtime-options)
-    (check-for-observers!)
-    (if (get runtime-options :loop)
-      (do
-        (check-for-journals!)
-        (start! runtime-options)
-        (loop! runtime-options))
-      (do
-        (prepare-for-summarize! runtime-options)
-        (start! runtime-options)
-        (summarize! runtime-options)
-        (shutdown!)))
+    (if (or (get runtime-options :loop) (get runtime-options :submit))
+      (ensure-some-journal!)
+      (prepare-for-summarize! runtime-options))
+    (start! runtime-options)
+    (if (get runtime-options :loop) (loop! runtime-options))
+    (if (and
+         (not (get runtime-options :submit))
+         (not (get runtime-options :loop)))
+      (summarize! runtime-options))
+    (if (not (get runtime-options :loop)) (exit!))
     (catch clojure.lang.ExceptionInfo e
       (if (-> e ex-data :bohr)
         (log/error (.getMessage e))
         (throw e)))))
 
-(defn -main [& cli-args]
+(defn -main
+  "Entry point for the `bohr` program."
+  [& cli-args]
   (apply boot! (parse-cli cli-args)))

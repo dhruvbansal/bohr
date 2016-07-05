@@ -1,10 +1,21 @@
+;;;; Manages dependencies between observers, checking for circularity
+;;;; and undefined dependencies.
+
 (ns bohr.dependencies
   (:require [clojure.tools.logging :as log]))
 
-(def ^{:private true} upstream   (atom {}))
+;; Maps observer names to sequences of observers that are
+;; upstream (dependencies) of that observer..
+(def ^{:private true} upstream (atom {}))
+
+;; Maps observer names to sequences of observers that are
+;; downstream (dependents) of that observer.
 (def downstream (atom {}))
 
-(defn- prevent-circular-dependencies! [dependencies dependency-chain]
+(defn- prevent-circular-dependencies!
+  "Check that the observers in `dependencies` are not already in the
+  `dependency-chain`."
+  [dependencies dependency-chain]
   (doseq [dependency dependencies]
     (let [extended-dependency-chain (conj dependency-chain dependency)]
       (if (= dependency (first dependency-chain))
@@ -17,7 +28,11 @@
        extended-dependency-chain)))
   true)
 
-(defn register-dependency! [dependent dependency]
+(defn register-dependency!
+  "Register a dependency from observer `dependent` on observer `dependency`.
+
+  Will check for circular dependencies.  Is idempotent."
+  [dependent dependency]
   (let [existing-dependencies (get @upstream dependent (set []))]
     (if (not (contains? existing-dependencies dependency))
       (let [extended-dependencies (conj existing-dependencies dependency)]
@@ -28,7 +43,10 @@
           (let [existing-dependents (get @downstream dependency (set []))]
             (swap! downstream assoc dependency (conj existing-dependents dependent))))))))
 
-(defn check-undefined-dependencies! [known-observer-names]
+(defn check-undefined-dependencies!
+  "Look for undefined dependencies given the given
+  `known-observer-names`."
+  [known-observer-names]
   (doseq [[observer dependencies] (seq @upstream)]
     (doseq [dependency dependencies]
       (if (not (contains? known-observer-names dependency))
@@ -37,5 +55,8 @@
           (format "Undefined dependency on observer '%s' in observer '%s'" dependency observer)
           {:bohr true :type :bohr-undefined-dependency}))))))
 
-(defn downstream-of [name]
+(defn downstream-of
+  "Returns observers that are downstream of (dependent on) the
+  observer with the given name."
+  [name]
   (get @downstream name []))

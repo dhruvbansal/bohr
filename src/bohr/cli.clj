@@ -1,104 +1,138 @@
-(ns bohr.cli
-  (:require [clojure.tools.cli :refer [parse-opts]]
-            [clojure.tools.logging :as log])
-  (:use     [clojure.string :only [join]]
-            bohr.log))
+;;;; Defines the command-line interface (CLI) for the `bohr` command.
+;;;;
+;;;; The `clojure.tools.cli` library is used behind the scenes.
 
-(defn- option-incrementer [current-options current-option-id current-option-value]
+(ns bohr.cli
+  (:require [clojure.tools.cli :refer [parse-opts]])
+  (:use     [clojure.string :only [join]]))
+
+(defn- option-incrementer
+  "Increments the current value of a counter-like option.
+
+  Intended to be used with the `parse-opts` function (hence the unused
+  `current-option-value` argument)."
+  [current-options current-option-id current-option-value]
   (update-in current-options [current-option-id] inc))
 
-(defn- option-appender [current-options current-option-id current-option-value]
+(defn- option-appender
+  "Appends a value to a list-like option.
+
+  Intended to be used with the `parse-opts` function."
+  [current-options current-option-id current-option-value]
   (update-in current-options [current-option-id] conj current-option-value))
-  
+
+;; Default command-line options.
 (def  ^{:private true} default-cli-options { :loop false })
 
+;; Options for the command-line parser.
 (def  ^{:private true} cli-parser-options
   [
-   ["-h" "--help"       "Print this help"                          :default false]
    ["-v" "--verbose"    "Log DEBUG statements (repeat for TRACE)." :default 0 :assoc-fn option-incrementer]
 
+   ["-c" "--config PATH" "Read configuration file/dir at the given path.  Can be given more than once."        :default [] :assoc-fn option-appender]
    ["-X" "--exclude-observer PATTERN" "Don't run observers with matching names.  Can be given more than once." :default [] :assoc-fn option-appender]
    ["-I" "--include-observer PATTERN" "Only run observers with matching names.  Can be given more than once."  :default [] :assoc-fn option-appender]
 
-   ["-c" "--config PATH" "Read configuration file/dir at the given path.  Can be given more than once." :default [] :assoc-fn option-appender ]
-
-   ["-l" "--loop"       "Run continuously, updating all TTLs"      :default false]
-   ["-V" "--version"    "Print version and exit"      :default false]
+   ["-h" "--help"       "Print this help"                                          :default false]
+   ["-s" "--submit"     "Submit reports to journals instead of just printing them" :default false]
+   ["-l" "--loop"       "Run continuously instead of just once"                    :default false]
+   ["-V" "--version"    "Print version and exit"                                   :default false]
    ])
 
-(defn- usage [options-summary]
-  (->> ["usage: bohr [options] SCRIPT [SCRIPT ...]
+(defn- usage
+  "Returns the usage text for the `bohr` program.
+
+  The argument `options-summary` is returned by the `parse-opts`
+  function."
+  [options-summary]
+  (->> ["usage: bohr [options] [SCRIPT ...]
 
 Bohr is a scientist who observes your system and takes many
-configurable readings.  He writes reports which he submits to several
+readings. He periodically writes reports which he submits to several
 journals.  These journals write them to data stores or other services.
 
-Define observations for Bohr to make, reports for Bohr to write, and
-journals for Bohr to submit to via Clojure scripts in Bohr's DSL.
+When run without any arguments
 
-  ;;; in bohr_scripts/test.clj
+  $ bohr
 
-  ;; Define static, *compile-time* observations.
-  (static :my.static
-    ;; Write arbitrary code here...
-    (rand))
+Bohr will observe a standard set of system metrics (CPU, memory, disk,
+&c.) and submit a single round of reports which will be printed to
+console.
 
-  ;; Define *runtime* observations that run once
-  (oberve :my.once
-    ;; Write arbitrary code here...
-    (rand))
+Define your own observations for Bohr to make via Clojure scripts in
+Bohr's DSL.  You can pass these scripts to Bohr directly:
 
-  ;; Define *runtime* observations that run periodically.
-  (observe :my.periodic ttl: 5
-    ;; Write arbitrary code here...
-    (rand))
+  $ bohr my_observer.clj ...
 
-  ;; Perform intermediate calculations.
-  (calc :my.intermediate
-    ;; Arbitrary code here can refer to (current) values of
-    ;; any previously defined observations.
-    (* (& :my.static) (& :my.once) (& :my.periodic))
+Bohr will make your observation in addition to his usual set of system
+metrics.
 
-  ;; Submit reports that run either once or periodically, as above.
-  ;; Reports can refer to the (current) values of observations &
-  ;; calculations, as above.
-  (report \"test\" ttl: 10
-    (submit \"metric.first\"  (& :my.intermediate))
-    (submit \"metric.second\" (* 2 (& :my.intermediate))))
+When run with the --submit flag
 
-Bohr's default behavior is to evaluate all scripts passed to it and
-then perform all observations, make all calculations, and submit all
-reports *once* and exit.
+  $ bohr --submit
 
-  $ bohr bohr_scripts/test.clj
-  $ bohr bohr_scrips
+Bohr will submit his reports to journals, instead of just printing
+them to the console.  You can provide additional journals on the
+command line
 
-In `--loop' mode, Bohr will run forever, continuously performing
-observations, making calculations, and submitting reports till he
-dies.  Silly guy."
+  $ bohr my_journal.clj --submit
+
+This can, of course, be combined with additional observers, too:
+
+  $ bohr my_observer.clj my_journal.clj --submit
+
+When the `--loop' flag is passed, Bohr will run forever, continuously
+performing observations and submitting reports (`--loop` implies
+`--submit`) till he dies.  Silly guy."
         ""
         "Options:"
         options-summary
         ""]
        (join \newline)))
 
-(defn- log-errors [errors]
-  (doseq [error errors]
-    (log/error error)))
-
-(defn exit
+(defn exit!
+  "Exit the `bohr` program, returning the given `status` (default 0)
+  and (optionally) printing the given `msg`."
+  ([]
+   (System/exit 0))
   ([status]
    (System/exit status))
   ([status msg]
    (if msg (.println *err* msg))
    (System/exit status)))
 
-(defn parse-cli [cli-args]
+(defn parse-cli
+  "Parse the command-line and return arguments and options.
+
+  If the `--help` option was present, print out a usage summary and
+  exit.
+  
+  If the `--version` option was present, print out the current Bohr
+  version and exit.
+
+  If any errors were encountered during parsing, log them and
+  exit.
+
+  Otherwise, return a 2-element vector consisting of the parsed
+  command-line arguments and options."
+  [cli-args]
   (let [{:keys [options arguments errors summary]} (parse-opts cli-args cli-parser-options)
-        runtime-options (merge default-log-options default-cli-options options)]
-    ;; set logger here b/c we can use it for errors
-    (set-bohr-logger! runtime-options)
+        runtime-options (merge default-cli-options options)]
+    
     (cond
-      (:help runtime-options) (exit 1 (usage summary))
-      errors                  (exit 2 (log-errors errors))
-      :else                   [arguments runtime-options])))
+      (:help runtime-options)
+      (exit! 1 (usage summary))
+
+      (:version runtime-options)
+      (do
+        (println (System/getProperty "bohr.version"))
+        (exit!))
+      
+      errors
+      (do
+        (doseq [error errors]
+          (.println *err* error))
+        (exit! 2))
+      
+      :else
+      [arguments runtime-options])))

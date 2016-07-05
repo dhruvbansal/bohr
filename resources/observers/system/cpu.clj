@@ -102,22 +102,22 @@
     })
 
 (defn- cpu-time []
-  (annotate-values
+  (annotate
    (case-os
     "Linux" (time-linux))
    time-annotations))
 
 (defn- cpu-util []
-  (annotate-values
+  (annotate
    (case-os
     "Mac" (util-mac))
    util-annotations))
   
 (observe :cpu.load :ttl 5, :tags ["system", "cpu"] :prefix "cpu.load"
-         (submit-values (load-average)))
+         (submit-many (load-average)))
 
 (observe :cpu.util :ttl 5, :tags ["system", "cpu"] :prefix "cpu.util" :units "%"
-         (submit-values (cpu-util)))
+         (submit-many (cpu-util)))
 
 (observe :cpu.time :ttl 5, :tags ["system", "cpu", "counter"] :prefix "cpu.time" :units "s"
-         (submit-values (cpu-time)))
+         (submit-many (cpu-time)))

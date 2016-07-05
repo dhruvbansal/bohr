@@ -42,7 +42,7 @@
     :row-filter
     #(not (re-find #"(loop|ram)" (get % :name))))
    :delete-key true
-   :transform-row #(annotate-values % disk-annotations)))
+   :transform-row #(annotate % disk-annotations)))
 
 (defn- disks []
   (case-os
@@ -50,4 +50,4 @@
 
 (observe :disk :ttl 5 :tags ["system" "disk"] :prefix "disk"
          (doseq [[disk-name disk] (seq (disks))]
-           (submit-values disk :suffix (format "[%s]" disk-name))))
+           (submit-many disk :suffix (format "[%s]" disk-name))))

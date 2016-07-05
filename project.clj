@@ -1,5 +1,5 @@
 (defproject bohr "0.1.0"
-  :description "Gathers metrics from your systems"
+  :description "Lightweight, extensible, metrics gathering and forwarding framework."
   :url "http://github.com/dhruvbansal/bohr"
   :license {:name "Apache Public License (2.0)"
             :url "http://www.apache.org/licenses/LICENSE-2.0"}
@@ -23,7 +23,7 @@
   :main ^:skip-aot bohr.core
   :target-path "target"
   
-  :plugins [[lein-bin "0.3.4"]]
+  :plugins [[lein-bin "0.3.4"] [lein-gentags "0.0.2-SNAPSHOT"]]
   :bin {:name "bohr"}
 
 
