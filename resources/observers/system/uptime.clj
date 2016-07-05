@@ -6,13 +6,6 @@
    boot-time-formatter-linux
    (sh-output "uptime -s")))
 
-(defn- uptime-linux []
-  (Float/parseFloat
-   (first
-    (string/split
-     (procfile-contents "uptime")
-     #" +"))))
-
 (defn- boot-time-mac []
   (time-format/parse
    boot-time-formatter-mac
@@ -21,18 +14,26 @@
     #" +"
     " " )))
 
+(def boot-time
+  (case-os
+   "Linux" (boot-time-linux)
+   "Mac"   (boot-time-mac)))
+
+(defn- uptime-linux []
+  (Float/parseFloat
+   (first
+    (string/split
+     (procfile-contents "uptime")
+     #" +"))))
+
 (defn- uptime-mac []
   (time/in-seconds
-   (time/interval (& :boot-time) (time/now))))
+   (time/interval boot-time (time/now))))
 
-(observe :boot-time
-         (case-os
-           "Linux" (boot-time-linux)
-           "Mac"   (boot-time-mac)))
+(defn- uptime []
+  (case-os
+   "Linux" (uptime-linux)
+   "Mac"   (uptime-mac)))
 
-           
-(observe :uptime :ttl 5 :tags ["duration"] :units "s"
-         (submit "uptime" (case-os
-                            "Linux" (uptime-linux)
-                            "Mac"   (uptime-mac)) :desc "System uptime"))
-
+(observe :uptime :period 5 :tags ["duration"] :units "s"
+         (submit "uptime" (uptime) :desc "System uptime"))

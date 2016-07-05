@@ -78,6 +78,7 @@
     (use 'bohr.notebook)
     (use 'bohr.journals)
     (use 'bohr.dsl)
+    (use 'bohr.os)
     (eval form)))
 
 (defn eval-script-content!

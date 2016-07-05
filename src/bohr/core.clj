@@ -17,7 +17,6 @@
    bohr.observers
    bohr.notebook
    bohr.journals
-   bohr.dependencies
    bohr.dsl   
    bohr.scripts
    bohr.cli
@@ -26,14 +25,6 @@
    bohr.log
    )
   (:gen-class))
-
-(defn- refresh-reading!
-  "Refresh the reading for the observer of the given `name` and all
-  its dependents."
-  [name]
-  (take-reading! name (make-observation name))
-  (doseq [dependent (downstream-of name)]
-    (refresh-reading! dependent)))
 
 (defn- populate!
   "Populate Bohr's observers and journals from the given `input-paths`
@@ -47,8 +38,7 @@
   (load-bundled-observers! runtime-options)
   (load-bundled-journals! runtime-options)
   (load-scripts! input-paths)
-  (warn-if-no-observers!)
-  (check-undefined-dependencies! (observer-names)))
+  (warn-if-no-observers!))
   
 (defn- start!
   "Take initial readings from each observer."
@@ -56,31 +46,31 @@
   (log/info "Taking initial readings...")
   (for-each-observer
    runtime-options
-   false ; want to include observers without TTLs
-   (fn [name _] (take-reading! name (make-observation name)))))
+   false ; want to include observers without periods
+   (fn [name _] (make-observation! name))))
 
 (def pool (mk-pool))
 
 (defn- create-observer-schedules!
-  "Schedules each observer with a TTL to refresh its reading periodically.
+  "Schedules each observer with a period to make observations periodically.
 
   The sequence of schedules is returned."
   [runtime-options]
   (map-observers
    runtime-options
-   true ; only want observers with TTLs
+   true ; only want observers with periods
    (fn [[name observer]]
-     (let [ttl-in-ms (* 1000 (get observer :ttl))]
-       (log/debug (format "Scheduling observer %s to run every %ss" name (:ttl observer)))
+     (let [period-in-ms (* 1000 (get observer :period))]
+       (log/debug (format "Scheduling observer %s to run every %ss" name (:period observer)))
        (every
-        ttl-in-ms
-        #(refresh-reading! name)
+        period-in-ms
+        #(make-observation! name)
         pool
-        :initial-delay ttl-in-ms)))))
+        :initial-delay period-in-ms)))))
 
 (defn- loop!
   "Run forever, with each observer taking readings on schedule given
-  by its TTL."
+  by its period."
   [runtime-options]
   (log/info "Periodically observing...")
   (let [schedules (create-observer-schedules! runtime-options)]

@@ -130,5 +130,5 @@
    "Linux" (filesystems-linux)
    "Mac"   (filesystems-mac)))
 
-(observe :fs :ttl 5 :prefix "fs"
+(observe :fs :period 5 :prefix "fs"
          (doseq [filesystem (filesystems)] (observe-filesystem filesystem)))

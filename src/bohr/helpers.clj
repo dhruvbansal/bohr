@@ -37,11 +37,6 @@
   [name]
   (sh-output (format "sysctl -n '%s'" name)))
 
-(defmacro case-os [& clauses]
-  `(case (& :os.type)
-     ~@clauses
-     (log/error "Cannot observe" current-observer "for OS" (& :os.type))))
-
 (defn translate [source mapping]
   (into
    {}

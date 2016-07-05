@@ -48,6 +48,6 @@
   (case-os
    "Linux" (disks-linux)))
 
-(observe :disk :ttl 5 :prefix "disk"
+(observe :disk :period 5 :prefix "disk"
          (doseq [[disk-name disk] (seq (disks))]
            (submit-many disk :suffix (format "[%s]" disk-name))))

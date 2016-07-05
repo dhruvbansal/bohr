@@ -108,8 +108,8 @@
    "Mac"
    (annotate (time-mac) time-annotations-mac)))
 
-(observe :cpu.load :ttl 5, :prefix "cpu.load" :tags ["metric"]
+(observe :cpu.load :period 5, :prefix "cpu.load" :tags ["metric"]
          (submit-many (load-average)))
 
-(observe :cpu.time :ttl 5, :prefix "cpu.time"
+(observe :cpu.time :period 5, :prefix "cpu.time"
          (submit-many (cpu-time)))

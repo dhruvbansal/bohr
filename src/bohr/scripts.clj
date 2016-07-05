@@ -74,7 +74,6 @@
   "Load all observers bundled with Bohr."
   []
   (doseq [observer-path [
-                         "os"               
                          "self"             
                          "system/uptime"    
                          "system/cpu"       

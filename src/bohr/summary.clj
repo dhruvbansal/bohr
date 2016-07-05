@@ -6,10 +6,10 @@
         bohr.observers
         bohr.journals))
 
-(defn- formatted-ttl [observer-name]
-  (let [ttl (get-observer observer-name :ttl)]
-    (if ttl
-      (format "%d" ttl)
+(defn- formatted-period [observer-name]
+  (let [period (get-observer observer-name :period)]
+    (if period
+      (format "%d" period)
       "")))
       
 (defn- formatted-value [value]
@@ -34,7 +34,7 @@
    (name observer-name)
    (formatted-value-with-units value options)
    (or (get options :desc) "")
-   (formatted-ttl observer-name)
+   (formatted-period observer-name)
    (formatted-tags (get options :tags))
    ])
 
@@ -43,7 +43,7 @@
    (map
     (fn [publication] (apply summary-row publication))
     @memory-journal-publications)
-   (list "Name" "Observer", "Value (units)" "Description" "TTL", "Tags")))
+   (list "Name" "Observer", "Value (units)" "Description" "Period", "Tags")))
 
 (defn prepare-for-summarize! [runtime-options]
   (reset!

@@ -5,20 +5,7 @@
             [clojure.string :as string])
   (:use bohr.notebook
         bohr.observers
-        bohr.journals
-        bohr.dependencies))
-
-(defn &
-  "Returns the value of the last reading for the observer of the given `name`.
-
-  Also registers a dependency on this observer from the observer it is
-  called within."
-  [name]
-  (register-dependency! current-observer name)
-  (if (reading? name) (get-reading name)
-      (do
-        (take-reading! name (make-observation name))
-        (get-reading name))))
+        bohr.journals))
 
 (defn- extract-observer-arguments
   "Helper function for extracting the arguments to pass to the

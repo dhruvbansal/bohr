@@ -1,11 +1,8 @@
 ;;;; Observers are data structures consisting of a name, some options,
-;;;; and a function (the observer's `instructions`).  Each observer's
-;;;; function takes no arguments and returns a value: that observer's
-;;;; reading.
+;;;; and a function (the observer's `instructions`).
 ;;;;
-;;;; Observers' functions can refer to the current readings of other
-;;;; observers, creating a dependency graph among observers, see
-;;;; dependencies.clj for further details.
+;;;; The function (which takes no arguments) should call the `submit`
+;;;; or `submit-many` functions, see journals.clj.
 
 (ns bohr.observers
   (:require [clojure.tools.logging :as log]))
@@ -69,7 +66,7 @@
 
   - `name` : The name of the new observer
   - `options` : A map of options for the observer with the following keys:
-    - :ttl : The amount of time (in seconds) the observer's reading is considered current
+    - :period : The amount of time (in seconds) the observer's reading is considered current
     - :prefix : A prefix to add to the observer's name.
     - :suffix : A suffix to add to the observer's name.
     - :units : Units for the observer's reading.
@@ -80,8 +77,8 @@
   (let [new-options (assoc options :instructions instructions)]
     (swap! observers assoc name new-options)))
 
-(defn make-observation
-  "Return the latest observation from the observer of the given `name`.
+(defn make-observation!
+  "Make observations using the observer of the given `name`.
 
   Increments the `observations` counter."
   [name]
@@ -140,14 +137,14 @@
        (observer-allowed? name excluded-patterns included-patterns))
      (seq @observers))))
   
-(defn- allowed-observers-with-ttls
+(defn- allowed-periodic-observers
   "Returns a sequence of observers that are allowed given the
-  inclusion/exclusion patterns in `runtime-options` and that have TTLs
+  inclusion/exclusion patterns in `runtime-options` and that have periods
   defined."
   [runtime-options]
   (filter
    (fn [[name observer]]
-     (get observer :ttl))
+     (get observer :period))
    (allowed-observers runtime-options)))
 
 (defn map-observers
@@ -159,13 +156,13 @@
   Only observers that are allowed given the inclusion/exclusion
   patterns in `runtime-options` will be iterated over.
 
-  If the argument `with-ttl` evaluates to true, only observers with
-  TTLs defined will be iterated over."
-  [runtime-options with-ttl f]
+  If the argument `periodic` evaluates to true, only observers with
+  periods defined will be iterated over."
+  [runtime-options periodic f]
   (map
    f
-   (if with-ttl
-     (allowed-observers-with-ttls runtime-options)
+   (if periodic
+     (allowed-periodic-observers runtime-options)
      (allowed-observers runtime-options))))
 
 (defn for-each-observer
@@ -177,12 +174,12 @@
   Only observers that are allowed given the inclusion/exclusion
   patterns in `runtime-options` will be iterated over.
 
-  If the argument `with-ttl` evaluates to true, only observers with
-  TTLs defined will be iterated over."
-  [runtime-options with-ttl f]
+  If the argument `periodic` evaluates to true, only observers with
+  periods defined will be iterated over."
+  [runtime-options periodic f]
   (doseq [[name observer] 
-          (if with-ttl
-            (allowed-observers-with-ttls runtime-options)
+          (if periodic
+            (allowed-periodic-observers runtime-options)
             (allowed-observers runtime-options))]
     (f name observer)))
 
