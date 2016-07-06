@@ -73,18 +73,7 @@
 (defn- load-all-bundled-observers!
   "Load all observers bundled with Bohr."
   []
-  (doseq [observer-path [
-                         "self"             
-                         "system/uptime"    
-                         "system/cpu"       
-                         "system/memory"    
-                         "system/users"     
-                         "system/fs"        
-                         "system/disk"      
-                         "system/net"       
-                         "system/ps"        
-                         "system/checksums"
-                         ]]
+  (doseq [observer-path ["self" "uptime" "cpu" "memory" "users" "fs" "disk" "net" "ps" "checksums" "dir"]]
     (load-bundled-observer! observer-path)))
   
 (defn load-bundled-observers!

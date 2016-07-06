@@ -33,6 +33,6 @@
 (defn- checksum-files []
   (or (get-config :checksum.files) []))
 
-(observe :checksums :period 5 :prefix "checksum"
+(observe :checksums :period 60 :prefix "checksum"
          (doseq [path-info (checksum-files)]
            (submit-file-checksum path-info)))

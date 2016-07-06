@@ -39,6 +39,6 @@
   (case-os
    "Linux" (interfaces-linux)))
 
-(observe :net :period 5 :prefix "net"
+(observe :net :period 10 :prefix "net"
          (doseq [[interface-name interface] (seq (interfaces))]
            (submit-many interface :attributes { :interface interface-name})))

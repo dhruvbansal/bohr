@@ -72,7 +72,7 @@
 (defn- expected-processes []
   (or (get-config :ps.expected) {}))
 
-(observe :ps :period 5 :prefix "ps"
+(observe :ps :period 10 :prefix "ps"
          (let [table (process-table)]
            (submit-many (process-counts-by-state table) :tags ["metric"])
            (doseq [[process-name process-info] (seq (expected-processes))]

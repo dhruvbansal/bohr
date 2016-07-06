@@ -114,7 +114,7 @@
        (get filesystem (make-property-name unit state false))
        :desc (make-metric-description filesystem unit state)
        :unit "B"
-       :attributes { :name (get filesystem :name) }
+       :attributes { :partition (get filesystem :name) }
        :tags ["metric"])
       (if (not (= :total state))
         (submit
@@ -122,7 +122,7 @@
          (get filesystem (make-property-name unit state true))
          :desc (make-metric-description filesystem unit state)
          :unit "%"
-         :attributes { :name (get filesystem :name) }
+         :attributes { :partition (get filesystem :name) }
          :tags ["metric"])))))
 
 (defn- filesystems []
@@ -130,5 +130,5 @@
    "Linux" (filesystems-linux)
    "Mac"   (filesystems-mac)))
 
-(observe :fs :period 5 :prefix "fs"
+(observe :fs :period 10 :prefix "fs"
          (doseq [filesystem (filesystems)] (observe-filesystem filesystem)))

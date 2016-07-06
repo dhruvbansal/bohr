@@ -27,3 +27,25 @@ bohr:
 
 riemann:
     host: localhost
+
+#
+# == Expected Processes ==
+#
+# ps.expected:
+#   - name: my_app
+#     user: my_app_user
+#     cmd:  my_appd
+
+#
+# == File Checksums ==
+#
+# checksum.files:
+#   - path: /etc/passwd
+#   - path: /etc/group
+
+#
+# == Directories ==
+#
+# dirs.tracked:
+#   - path: /etc/passwd
+#   - path: /etc/group
