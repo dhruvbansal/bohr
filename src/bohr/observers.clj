@@ -22,6 +22,7 @@
 (def ^{:dynamic true} current-suffix nil)
 (def ^{:dynamic true} current-units nil)
 (def ^{:dynamic true} current-tags nil)
+(def ^{:dynamic true} current-attributes nil)
 
 (defn- observer?
   "Is there an observer with the given `name`?"
@@ -66,12 +67,15 @@
 
   - `name` : The name of the new observer
   - `options` : A map of options for the observer with the following keys:
-    - :period : The amount of time (in seconds) the observer's reading is considered current
-    - :prefix : A prefix to add to the observer's name.
-    - :suffix : A suffix to add to the observer's name.
-    - :units : Units for the observer's reading.
-    - :tags : Tags for the observer's reading.
-  - `instructions` : A function (taking no arguments) which returns the observer's reading."
+    - :period : The amount of time (in seconds) the observer will wait between observations.
+    - :prefix : A prefix to add to the name of any submissions made by the observer.
+    - :suffix : A suffix to add to the name of any submissions made by the observer.
+    - :units : Default units for any submissions made by the observer.
+    - :tags : Default tags for any submissions made by the observer.
+    - :attributes : Default key-value pairs for any submissions made by the observer.
+  - `instructions` : A function (taking no arguments) which makes
+  observations and calls the `submit` or `submit-many` functions in
+  journals.clj."
   [name options instructions]
   (log/trace "Defining observer" name "with options" options)
   (let [new-options (assoc options :instructions instructions)]
@@ -87,10 +91,11 @@
   (swap! observations inc)
   (let [observer (get-observer name)]
     (binding [current-observer name
-              current-prefix   (get observer :prefix)
-              current-suffix   (get observer :suffix)
-              current-units    (get observer :units)
-              current-tags     (get observer :tags [])]
+              current-prefix     (get observer :prefix)
+              current-suffix     (get observer :suffix)
+              current-units      (get observer :units)
+              current-tags       (get observer :tags [])
+              current-attributes (get observer :attributes {})]
       ((get observer :instructions)))))
 
 (defn- observer-allowed?

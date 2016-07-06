@@ -12,10 +12,8 @@
     (keyword (format "%s.%s.pct" (name unit) (name state)))
     (keyword (format "%s.%s" (name unit) (name state)))))
 
-(defn- make-metric-name [unit state filesystem pct]
-  (format "%s[%s]"
-          (name (make-property-name unit state pct))
-          (get filesystem :name)))
+(defn- make-metric-name [unit state pct]
+  (name (make-property-name unit state pct)))
 
 (defn- make-metric-description [filesystem unit state]
   (format
@@ -112,17 +110,19 @@
   (doseq [unit [:bytes :inodes]]
     (doseq [state [:free :used :total]]
       (submit
-       (make-metric-name unit state filesystem false)
+       (make-metric-name unit state false)
        (get filesystem (make-property-name unit state false))
        :desc (make-metric-description filesystem unit state)
        :unit "B"
+       :attributes { :name (get filesystem :name) }
        :tags ["metric"])
       (if (not (= :total state))
         (submit
-         (make-metric-name unit state filesystem true)
+         (make-metric-name unit state true)
          (get filesystem (make-property-name unit state true))
          :desc (make-metric-description filesystem unit state)
          :unit "%"
+         :attributes { :name (get filesystem :name) }
          :tags ["metric"])))))
 
 (defn- filesystems []

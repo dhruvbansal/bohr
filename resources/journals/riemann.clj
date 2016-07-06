@@ -1,7 +1,6 @@
 (require '[riemann.client :as riemann])
 (use 'overtone.at-at)
 
-
 (def ^{:private true} client-config
   (or (get-config :riemann) {:host "localhost"}))
 
@@ -11,23 +10,28 @@
 
 (def ^{:private true} publication-responses (atom []))
 
-(defn- event-from-submission [name value options]
-  (let [base-event
+(defn- event-from-observation [name value options]
+  (let [event
         {:service     name
          :tags        (get options :tags [])
          :description (get options :desc)
+         :attributes  (get options :attributes {})
          }
 
-        base-event-with-units
+        event-with-units
         (if (get options :units)
-          (assoc base-event :attributes { :units (get options :units)})
-          base-event)]
-    (if (number? value)
-      (assoc base-event-with-units :metric value)
-      (assoc base-event-with-units :state (str value)))))
+          (assoc event :attributes
+                 (assoc (get :attributes event) :units (get options :units)))
+          event)
+
+        event-with-value
+        (if (number? value)
+          (assoc event-with-units :metric value)
+          (assoc event-with-units :state (str value)))]
+    event-with-value))
 
 (defn riemann-journal [name value options]
-  (let [event (event-from-submission name value options)]
+  (let [event (event-from-observation name value options)]
     (log/trace "Publishing to Riemann:" event)
     (swap!
      publication-responses
@@ -46,6 +50,7 @@
     (let [response-ref (first @publication-responses)
           response     (deref response-ref  5000 ::timeout)
           response-error (get response :error)]
+      (log/trace "Handling response from Riemann" response)
       (if response-error
         (log/error "Could not publish to Riemann:" response-error)))
     (swap! publication-responses subvec 1)))

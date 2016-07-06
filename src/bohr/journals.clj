@@ -7,7 +7,8 @@
   (:require [clj-time.core :as time]
             [clojure.tools.logging :as log]
             [clojure.string :as string])
-  (:use bohr.observers))
+  (:use bohr.observers
+        bohr.config))
 
 ;; The set of Bohr journals.
 ;;
@@ -61,6 +62,9 @@
             (concat
              (or (get options :tags) [])
              current-tags))
+    :attributes (merge-configs
+                 [current-attributes
+                 (get options :attributes {})])
     })
 
 (defn submit
@@ -69,10 +73,13 @@
   Additional arguments will be interpreted as a map of options.  The
   following keys will be interpreted:
 
-  - :prefix : set a default prefix for the observations
-  - :suffix : set a default suffix for the observations
-  - :units : set default units for the observations
-  - :tags : set default tags for the observations
+  - :prefix : add a prefix for the observation's name
+  - :suffix : add a suffix for the observation's name
+  - :units : set the observation's units
+  - :tags : set the observation's tags
+  - :attributes : set the observation's attributes
+
+  The above options will be scoped appropriately.
 
   Additional key-value pairs will be passed to the journal's
   function."
@@ -94,10 +101,11 @@
   Additional arguments will be passed to the `submit` function."
   [values & args]
   (let [options (apply hash-map args)]
-    (binding [current-prefix (string/join "." (filter identity [current-prefix (get options :prefix)]))
-              current-suffix (string/join ""  (filter identity [current-suffix (get options :suffix)]))
-              current-units  (get options :units current-units)
-              current-tags   (distinct (concat current-tags (get options :tags [])))]
+    (binding [current-prefix     (string/join "." (filter identity [current-prefix (get options :prefix)]))
+              current-suffix     (string/join ""  (filter identity [current-suffix (get options :suffix)]))
+              current-units      (get options :units current-units)
+              current-tags       (distinct (concat current-tags (get options :tags [])))
+              current-attributes (merge-configs [current-attributes (get options :attributes {})])]
       (doseq [[name value] values]
         (if (and
              (map? value)

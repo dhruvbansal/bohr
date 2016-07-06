@@ -9,7 +9,7 @@
 (defn- formatted-period [observer-name]
   (let [period (get-observer observer-name :period)]
     (if period
-      (format "%d" period)
+      (format "%ds" period)
       "")))
       
 (defn- formatted-value [value]
@@ -28,14 +28,22 @@
 (defn- formatted-tags [tags]
   (string/join "," (sort (seq tags))))
 
+(defn- formatted-attributes [attributes]
+  (string/join
+   ","
+   (map
+    (fn [[k,v]] (format "%s:%s" (name k) v))
+    (seq attributes))))
+
 (defn- summary-row [observer-name row-name value options]
   [
-   (name row-name)
+   (str (get-observer observer-name :period))
    (name observer-name)
+   (name row-name)
+   (formatted-tags (get options :tags []))   
+   (formatted-attributes (get options :attributes {}))
+   (or (get options :desc) "")   
    (formatted-value-with-units value options)
-   (or (get options :desc) "")
-   (formatted-period observer-name)
-   (formatted-tags (get options :tags))
    ])
 
 (defn- summary-table []
@@ -43,7 +51,7 @@
    (map
     (fn [publication] (apply summary-row publication))
     @memory-journal-publications)
-   (list "Name" "Observer", "Value (units)" "Description" "Period", "Tags")))
+   (list "Period (s)", "Observer" "Observation", "Tags" "Attributes" "Description" "Value (Units)")))
 
 (defn prepare-for-summarize! [runtime-options]
   (reset!

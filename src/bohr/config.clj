@@ -42,7 +42,7 @@
       (.isDirectory file) (read-config-directory file)
       :else               (read-config-file file))))
 
-(defn- merge-configs
+(defn merge-configs
   "Return the merged version of all the `configs`.
 
   Tries to be intelligent about merging containers such as maps and

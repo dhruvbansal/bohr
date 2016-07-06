@@ -41,4 +41,4 @@
 
 (observe :net :period 5 :prefix "net"
          (doseq [[interface-name interface] (seq (interfaces))]
-           (submit-many interface :suffix (format "[%s]" interface-name))))
+           (submit-many interface :attributes { :interface interface-name})))
