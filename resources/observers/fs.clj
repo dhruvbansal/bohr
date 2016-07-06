@@ -114,7 +114,7 @@
        (get filesystem (make-property-name unit state false))
        :desc (make-metric-description filesystem unit state)
        :unit "B"
-       :attributes { :partition (get filesystem :name) }
+       :attributes { :device (get filesystem :name) }
        :tags ["metric"])
       (if (not (= :total state))
         (submit
@@ -122,7 +122,7 @@
          (get filesystem (make-property-name unit state true))
          :desc (make-metric-description filesystem unit state)
          :unit "%"
-         :attributes { :partition (get filesystem :name) }
+         :attributes { :device (get filesystem :name) }
          :tags ["metric"])))))
 
 (defn- filesystems []
