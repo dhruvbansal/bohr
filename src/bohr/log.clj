@@ -4,7 +4,8 @@
 ;;;; libraries (clj-logging-config) wrapping it.
 
 (ns bohr.log
-  (:use clj-logging-config.log4j))
+  (:use clj-logging-config.log4j
+        bohr.config))
 
 ;; Default options for the Bohr logger.
 ;;

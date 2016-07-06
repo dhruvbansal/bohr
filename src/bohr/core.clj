@@ -26,63 +26,47 @@
    )
   (:gen-class))
 
-(defn- populate!
-  "Populate Bohr's observers and journals from the given `input-paths`
-  and `runtime-options`.
-
-  Will delegate to the functions:
-  - `load-bundled-observers!`
-  - `load-bundled-journals`
-  - `load-scripts!`"
-  [input-paths runtime-options]
-  (load-bundled-observers! runtime-options)
-  (load-bundled-journals! runtime-options)
-  (load-scripts! input-paths)
-  (warn-if-no-observers!))
-  
-(defn- start!
+(defn- init!
   "Take initial readings from each observer."
-  [runtime-options]
+  []
   (log/info "Taking initial readings...")
-  (for-each-observer
-   runtime-options
-   false ; want to include observers without periods
+  (for-each-allowed-observer
    (fn [name _] (make-observation! name))))
 
+(defn- stop!
+  "Stop all scheduled observers."
+  []
+  (log/debug "Stopping all scheduled observers...")
+  (doseq [[name schedule] (seq @observer-schedules)]
+    (stop schedule)))
+  
 (def pool (mk-pool))
 
-(defn- create-observer-schedules!
-  "Schedules each observer with a period to make observations periodically.
-
-  The sequence of schedules is returned."
-  [runtime-options]
-  (map-observers
-   runtime-options
-   true ; only want observers with periods
-   (fn [[name observer]]
-     (let [period-in-ms (* 1000 (get observer :period))]
-       (log/debug (format "Scheduling observer %s to run every %ss" name (:period observer)))
-       (every
-        period-in-ms
-        #(make-observation! name)
-        pool
-        :initial-delay period-in-ms)))))
+(defn- create-observer-schedule!
+  "Start and return a new schedule for the given `observer` with the
+  given `name`."
+  [name observer]
+  (log/debug (format "Scheduling observer %s to run every %ss" name (:period observer)))
+  (let [period-in-ms (* 1000 (:period observer))]
+    (every
+     period-in-ms
+     #(make-observation! name)
+     pool
+     :initial-delay period-in-ms)))
 
 (defn- loop!
   "Run forever, with each observer taking readings on schedule given
   by its period."
-  [runtime-options]
+  []
   (log/info "Periodically observing...")
-  (let [schedules (create-observer-schedules! runtime-options)]
-    (try
-      ;; For some reason, this `doseq' block must be here in order for
-      ;; the timers to run...perhaps because they need to be
-      ;; explicitly mentioned somewhere or the compiler will just
-      ;; optimize them out?
-      (doseq [schedule schedules] schedule)
-      (catch clojure.lang.ExceptionInfo e
-        (doseq [schedule schedules] (stop schedule))
-        (throw e)))))
+  (try
+    (for-each-periodic-allowed-observer
+     (fn [name observer]
+       (swap! observer-schedules assoc name
+              (create-observer-schedule! name observer))))
+    (catch clojure.lang.ExceptionInfo e
+      (stop!)
+      (throw e))))
 
 (defn- boot!
   "Boot Bohr process.
@@ -104,19 +88,20 @@
   [input-paths runtime-options]
   (set-bohr-logger! runtime-options)
   (try
-    (log/debug "Bohr is booting")
     (load-config! runtime-options)
-    (populate! input-paths runtime-options)
-    (if (or (get runtime-options :loop) (get runtime-options :submit))
+    (log/debug "Bohr is booting")
+    (populate! input-paths)
+    (warn-if-no-observers!)
+    (if (or (get-config :loop) (get-config :submit))
       (ensure-some-journal!)
-      (prepare-for-summarize! runtime-options))
-    (start! runtime-options)
-    (if (get runtime-options :loop) (loop! runtime-options))
+      (prepare-for-summarize!))
+    (init!)
+    (if (get-config :loop) (loop!))
     (if (and
-         (not (get runtime-options :submit))
-         (not (get runtime-options :loop)))
-      (summarize! runtime-options))
-    (if (not (get runtime-options :loop)) (exit!))
+         (not (get-config :submit))
+         (not (get-config :loop)))
+      (summarize!))
+    (if (not (get-config :loop)) (exit!))
     (catch clojure.lang.ExceptionInfo e
       (if (-> e ex-data :bohr)
         (log/error (.getMessage e))

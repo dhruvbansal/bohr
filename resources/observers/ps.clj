@@ -35,10 +35,7 @@
 (def missing-process-state "X")
 
 (defn- submit-expected-process-state [table expected-process-name expected-process-info]
-  (let [metric-name 
-        (format "state[%s]" (name expected-process-name))
-
-        metric-desc
+  (let [metric-desc
         (format "State of process %s" (name expected-process-name))
 
         user-pattern
@@ -62,11 +59,12 @@
           table))
         ]
     (submit
-     metric-name
+     "state"
      (if process
        (get process :state)
        missing-process-state)
      :desc metric-desc
+     :attributes { :name (name expected-process-name) }
      :tags ["last"])))
         
 (defn- expected-processes []

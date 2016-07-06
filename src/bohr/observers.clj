@@ -5,13 +5,20 @@
 ;;;; or `submit-many` functions, see journals.clj.
 
 (ns bohr.observers
-  (:require [clojure.tools.logging :as log]))
+  (:require [clojure.tools.logging :as log])
+  (:use bohr.config))
 
 ;; The set of Bohr observers.
 ;;
 ;; Keys should be observer names (strings) and values are the observer
 ;; functions themselves.
 (def ^{:private true} observers (atom {}))
+
+;; The set of schedules defined for (periodic) observers.
+;;
+;; Keys should be observer names (strings) and values are the
+;; corresponding schedules.
+(def observer-schedules (atom {}))
 
 ;; Counter for the number of observations sucessfully made (across all
 ;; observers).
@@ -133,60 +140,41 @@
 
 (defn- allowed-observers
   "Returns a sequence of observers that are allowed given the
-  inclusion/exclusion patterns in `runtime-options`."
-  [runtime-options]
-  (let [excluded-patterns (map #(re-pattern %) (get runtime-options :exclude-observer))
-        included-patterns (map #(re-pattern %) (get runtime-options :include-observer))]
+  configured inclusion/exclusion patterns."
+  []
+  (let [excluded-patterns (map #(re-pattern %) (get-config :exclude-observers))
+        included-patterns (map #(re-pattern %) (get-config :include-observers))]
     (filter
      (fn [[name observer]]
        (observer-allowed? name excluded-patterns included-patterns))
      (seq @observers))))
-  
-(defn- allowed-periodic-observers
-  "Returns a sequence of observers that are allowed given the
-  inclusion/exclusion patterns in `runtime-options` and that have periods
-  defined."
-  [runtime-options]
-  (filter
-   (fn [[name observer]]
-     (get observer :period))
-   (allowed-observers runtime-options)))
 
-(defn map-observers
-  "Returns the result of applying a function `f` over each observer.
-
-  The function should take two arguments: the name of the observer and
-  the observer itself.
-
-  Only observers that are allowed given the inclusion/exclusion
-  patterns in `runtime-options` will be iterated over.
-
-  If the argument `periodic` evaluates to true, only observers with
-  periods defined will be iterated over."
-  [runtime-options periodic f]
-  (map
-   f
-   (if periodic
-     (allowed-periodic-observers runtime-options)
-     (allowed-observers runtime-options))))
-
-(defn for-each-observer
+(defn for-each-allowed-observer
   "Successively apply a function `f` for each observer.
 
   The function should take two arguments: the name of the observer and
   the observer itself.
 
-  Only observers that are allowed given the inclusion/exclusion
-  patterns in `runtime-options` will be iterated over.
-
-  If the argument `periodic` evaluates to true, only observers with
-  periods defined will be iterated over."
-  [runtime-options periodic f]
-  (doseq [[name observer] 
-          (if periodic
-            (allowed-periodic-observers runtime-options)
-            (allowed-observers runtime-options))]
+  Only observers that are allowed given the configured
+  inclusion/exclusion patterns will be iterated over."
+  [f]
+  (doseq [[name observer] (allowed-observers)]
     (f name observer)))
+
+(defn for-each-periodic-allowed-observer
+  "Successively apply a function `f` for each observer.
+
+  The function should take two arguments: the name of the observer and
+  the observer itself.
+
+  Only observers that are allowed given the configured
+  inclusion/exclusion patterns and which are defined with periods will
+  be iterated over."
+  [f]
+  (for-each-allowed-observer
+   (fn [name observer]
+     (if (:period observer)
+       (f name observer)))))
 
 (defn warn-if-no-observers!
   "Logs a warning message if no observers are defined."

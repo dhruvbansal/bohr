@@ -30,8 +30,8 @@
    ["-v" "--verbose"    "Log DEBUG statements (repeat for TRACE)." :default 0 :assoc-fn option-incrementer]
 
    ["-c" "--config PATH" "Read configuration file/dir at the given path.  Can be given more than once."        :default [] :assoc-fn option-appender]
-   ["-X" "--exclude-observer PATTERN" "Don't run observers with matching names.  Can be given more than once." :default [] :assoc-fn option-appender]
-   ["-I" "--include-observer PATTERN" "Only run observers with matching names.  Can be given more than once."  :default [] :assoc-fn option-appender]
+   ["-X" "--exclude-observer PATTERN" "Don't run observers with matching names.  Can be given more than once." :default [] :assoc-fn option-appender :id :exclude-observers] ; pluralize :id to match configuration file syntax
+   ["-I" "--include-observer PATTERN" "Only run observers with matching names.  Can be given more than once."  :default [] :assoc-fn option-appender :id :include-observers] ; pluralize :id to match configuration file syntax
 
    ["-h" "--help"       "Print this help"                                          :default false]
    ["-s" "--submit"     "Submit reports to journals instead of just printing them" :default false]

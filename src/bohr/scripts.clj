@@ -77,9 +77,8 @@
     (load-bundled-observer! observer-path)))
   
 (defn load-bundled-observers!
-  "Load observers bundled with Bohr according to the given
-  `runtime-options`."
-  [runtime-options]
+  "Load observers bundled with Bohr."
+  []
   (let [observers
         (get (or (get-config :bohr) {}) :observers)]
     (cond
@@ -89,7 +88,6 @@
       
       (seq? observers)
       (doseq [observer-path observers]
-        (println "LOADING" observer-path)
         (load-bundled-observer! observer-path)))))
 
 (defn- load-bundled-journal!
@@ -101,9 +99,15 @@
     (format "journals/%s.clj" path))))
 
 (defn load-bundled-journals!
-  "Load journals bundled with Bohr according to the given
-  `runtime-options`."
-  [runtime-options]
+  "Load journals bundled with Bohr."
+  []
   (doseq [journal-path
           (get (or (get-config :bohr) {}) :journals)]
     (load-bundled-journal! journal-path)))
+
+(defn populate!
+  "Populate Bohr's observers and journals from the given `input-paths`."
+  [input-paths]
+  (load-bundled-observers!)
+  (load-bundled-journals!)
+  (load-scripts! input-paths))

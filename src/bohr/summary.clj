@@ -53,7 +53,7 @@
     @memory-journal-publications)
    (list "Period (s)", "Observer" "Observation", "Tags" "Attributes" "Description" "Value (Units)")))
 
-(defn prepare-for-summarize! [runtime-options]
+(defn prepare-for-summarize! []
   (reset!
    disabled-journals
    (set/difference
@@ -61,8 +61,8 @@
     (set ["memory"])))
   (define-journal! "memory" memory-journal))
 
-(defn summarize! [runtime-options]
+(defn summarize! []
   (log/debug "Producing summary")
   (if (memory-journal-publications?)
-    (table (summary-table) :sort true :desc true)
+    (table (summary-table) :sort "Observation" :desc true)
     (log/info "No observers!")))

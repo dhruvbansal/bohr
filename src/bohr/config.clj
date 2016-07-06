@@ -69,7 +69,10 @@
 
   The `runtime-options` map should have a key `config` with the path
   to a YAML configuration file or directory as its corresponding
-  value."
+  value.
+
+  The `runtime-options` map will itself be merged into the
+  configuration."
   [runtime-options]
   (let [config-paths (or (get runtime-options :config) [])]
     (reset!
@@ -77,7 +80,7 @@
      (merge-configs
       (flatten
        (concat
-        [@bohr-config]
+        [@bohr-config runtime-options]
         (map read-config config-paths)))))))
 
 (defn get-config
