@@ -8,12 +8,12 @@
   (or (get-config :dirs.tracked) {}))
 
 (defn- dir-size [dir]
-  (Integer/parseInt
+  (Long/parseLong
    (sh-output
-    (format "du -s %s 2>/dev/null | cut -f 1" (:path dir)))))
+    (format "du -s --block-size=1 %s 2>/dev/null | cut -f 1" (:path dir)))))
 
 (defn- file-count [dir]
-  (Integer/parseInt
+  (Long/parseLong
    (sh-output
     (format "find %s/ -type f -xdev 2>/dev/null | wc -l" (:path dir)))))
 
@@ -24,4 +24,4 @@
    
 (observe :dir :period 300 :prefix "dir" :tags ["metric"]
          (doseq [dir (seq (dirs-to-track))]
-                (submit-many (dir-summary dir) :attributes { :role (:role dir) })))
+           (submit-many (dir-summary dir) :attributes { :contents (:contents dir) })))

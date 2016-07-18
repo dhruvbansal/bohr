@@ -65,25 +65,27 @@
    configs))
 
 (defn load-config!
-  "Load configuration from the given `runtime-options`.
+  "Load configuration from the given `cli-options`.
 
-  The `runtime-options` map should have a key `config` with the path
+  The `cli-options` map should have a key `config` with the path
   to a YAML configuration file or directory as its corresponding
   value.
 
-  The `runtime-options` map will itself be merged into the
+  The `cli-options` map will itself be merged into the
   configuration."
-  [runtime-options]
-  (let [config-paths (or (get runtime-options :config) [])]
+  [cli-options]
+  (let [config-paths (or (get cli-options :config) [])]
     (reset!
      bohr-config
      (merge-configs
       (flatten
        (concat
-        [@bohr-config runtime-options]
+        [@bohr-config cli-options]
         (map read-config config-paths)))))))
 
 (defn get-config
   "Return the value of the configuration `key`."
-  [key]
-  (get @bohr-config key))
+  ([key]
+   (get @bohr-config key))
+  ([key default]
+   (get @bohr-config key default)))

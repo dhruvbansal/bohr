@@ -15,9 +15,7 @@
   (:use
    overtone.at-at
    bohr.observers
-   bohr.notebook
    bohr.journals
-   bohr.dsl   
    bohr.scripts
    bohr.cli
    bohr.config   
@@ -74,34 +72,40 @@
   Takes the following steps:
 
   1) Initiates the logger.
+  
   2) Loads configuration files.
+  
   3) Populates observers & journals.
+  
   4) Choose what happens:
-     a) If --loop was given, run forever, submitting observations to
-        journals.  If no journals were populated, defaults to the console
-        journal.
-     b) If --submit was given, run once, submitting initial
+  
+     a) If --once was given, run once, submitting initial
         observations to journals.  If no journals were populated, defaults
         to the console journal.
+  
+     b) If --periodic was given, start looping, submitting observations
+        to journals.  If no journals were populated,defaults to the console
+        journal.
+  
      c) Otherwise run once and summarize all observations to console,
         ignoring all journals."
-  [input-paths runtime-options]
-  (set-bohr-logger! runtime-options)
+  [input-paths cli-options]
+  (set-bohr-logger! cli-options)
   (try
-    (load-config! runtime-options)
+    (load-config! cli-options)
     (log/debug "Bohr is booting")
     (populate! input-paths)
     (warn-if-no-observers!)
-    (if (or (get-config :loop) (get-config :submit))
+    (if (or (get-config :periodic) (get-config :once))
       (ensure-some-journal!)
       (prepare-for-summarize!))
     (init!)
-    (if (get-config :loop) (loop!))
+    (if (get-config :periodic) (loop!))
     (if (and
-         (not (get-config :submit))
-         (not (get-config :loop)))
+         (not (get-config :once))
+         (not (get-config :periodic)))
       (summarize!))
-    (if (not (get-config :loop)) (exit!))
+    (if (not (get-config :periodic)) (exit!))
     (catch clojure.lang.ExceptionInfo e
       (if (-> e ex-data :bohr)
         (log/error (.getMessage e))

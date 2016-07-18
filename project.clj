@@ -10,6 +10,7 @@
                  [org.clojure/tools.cli     "0.3.3"  ]
                  [org.clojure/tools.logging "0.3.1"  ]
                  [clj-logging-config        "1.9.3"  ]
+                 [clj-glob "1.0.0"]
                  [table "0.5.0"]
                  [riemann-clojure-client "0.4.2"]
                  [clj-yaml "0.4.0"]

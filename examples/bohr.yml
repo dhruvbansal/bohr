@@ -2,29 +2,61 @@
 
 # == Overview ==
 #
-# This is an example YAML configuration file for Bohr.  The
-# uncommented parts are identical to Bohr's default configuration.
-# Alternatives are provided via commented sections.
+# This is an example YAML configuration file for Bohr.
+#
+# Uncommented sections correspond to Bohr defaults so can be loaded
+# without modification.
+#
+# Commented sections can be uncommented and modified to suit your
+# needs.
 
+
+#
+# == Observers ==
+#
+
+# Bohr ships with several bundled observers, all of which will be
+# loaded by default unless you uncomment the following section and
+# specify subsections.
+# 
+# bundled-observers:
+#   - 'system/*.clj'
+#   - 'elasticsearch/*.clj'
+
+#
+# == External Scripts ==
+#
+
+# External scripts, whether defining observers or journals or anything
+# else, can be loaded below:
+#
+# load:
+#   - /var/lib/bohr/*.clj
+
+
+#
 # == Journals ==
 #
-# Declare which journals Bohr should use. Journal-specific
-# configurations are below.
 
-bohr:
-  journals:
-    - console
-    # - riemann
+# Bohr ships with several bundled journals.  None of these journals
+# will be used by default unless declared here (though Bohr will
+# default to the 'console' journal at runtime if it can't find any
+# others).
+# 
+# bundled-journals:
+#   - console
+#   - riemann
+
 
 #
 # == Riemann Journal ==
 #
+
 # Configuration values for the 'riemann' key are passed directly to
 # the official Riemann Clojure client.
 #
 # See https://github.com/riemann/riemann-clojure-client for details.
 # Default value is below
-
 riemann:
     host: localhost
 
@@ -44,7 +76,7 @@ riemann:
 #   - path: /etc/group
 
 #
-# == Directories ==
+# == Directories Tracked ==
 #
 # dirs.tracked:
 #   - path: /etc/passwd

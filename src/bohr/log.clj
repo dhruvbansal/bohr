@@ -16,11 +16,11 @@
 (defn set-bohr-logger!
   "Sets the root Bohr logger.
 
-  Argument `runtime-options` is a map with keys:
+  Argument `cli-options` is a map with keys:
   
   - :verbose -- increases runtime log-level, 0=info, 1=debug, 2=trace"
-  [runtime-options]
-  (let [verbosity (get runtime-options :verbose)
+  [cli-options]
+  (let [verbosity (get cli-options :verbose)
         log-level (cond
                     (or (nil? verbosity) (= 0 verbosity)) (get default-log-options :log-level)
                     (=  1 verbosity) :debug

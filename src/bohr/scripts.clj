@@ -10,7 +10,8 @@
 (ns bohr.scripts
   (:require [clojure.java.io :as io]
             [clojure.tools.logging :as log])
-  (:use bohr.eval
+  (:use org.satta.glob
+        bohr.eval
         bohr.config))
 
 (defn- load-script-file!
@@ -37,7 +38,7 @@
           (filter #(re-find #"\.clj$" %) (.list dir))]
     (load-script-file! (io/file dir clojure-path))))
 
-(defn- load-script!
+(defn load-script!
   "Load a script at the given `input-path`, whether file or
   directory."
   [input-path]
@@ -62,52 +63,39 @@
   (doseq [input-path input-paths]
     (load-script! input-path)))
 
-(defn- load-bundled-observer!
-  "Load the script at the given `path` relative to the bundled
-  observers directory."
-  [path]
-  (load-script-file!
-   (io/resource
-    (format "observers/%s.clj" path))))
-
-(defn- load-all-bundled-observers!
-  "Load all observers bundled with Bohr."
-  []
-  (doseq [observer-path ["self" "uptime" "cpu" "memory" "users" "fs" "disk" "net" "ps" "checksums" "dir"]]
-    (load-bundled-observer! observer-path)))
+;; Default bundled observers to load.  Will match all observers.
+(def default-bundled-observers ["*/*.clj"])
   
-(defn load-bundled-observers!
-  "Load observers bundled with Bohr."
+(defn- load-bundled-observers!
+  "Load observers bundled with Bohr.
+
+  This can be controlled via the `observers` setting in the
+  configuration file."
   []
-  (let [observers
-        (get (or (get-config :bohr) {}) :observers)]
-    (cond
-      (or (nil? observers)
-          (= true observers))
-      (load-all-bundled-observers!)
-      
-      (seq? observers)
-      (doseq [observer-path observers]
-        (load-bundled-observer! observer-path)))))
+  (doseq [pattern (get-config :bundled-observers default-bundled-observers)]
+    (doseq [path (glob (format "%s/%s" (.getPath (io/resource "observers")) pattern))]
+      (load-script! path))))
 
-(defn- load-bundled-journal!
-  "Load the script at the given `path` relative to the bundled
-  journals directory."
-  [path]
-  (load-script-file!
-   (io/resource
-    (format "journals/%s.clj" path))))
-
-(defn load-bundled-journals!
+(defn- load-bundled-journals!
   "Load journals bundled with Bohr."
   []
-  (doseq [journal-path
-          (get (or (get-config :bohr) {}) :journals)]
-    (load-bundled-journal! journal-path)))
+  (doseq [pattern (get-config :bundled-journals [])]
+    (doseq [path (glob (format "%s/%s" (.getPath (io/resource "journals")) pattern))]
+      (load-script! path))))
+
+(defn- load-external-scripts!
+  "Load external scripts specified in configuration."
+  []
+  (doseq [pattern (get-config :load [])]
+    (doseq [path (glob pattern)]
+      (load-script! path))))
 
 (defn populate!
-  "Populate Bohr's observers and journals from the given `input-paths`."
+  "Populate Bohr's observers and journals from the given
+  `input-paths`, code pointed at by Bohr's configuration, and code
+  bundled with Bohr."
   [input-paths]
   (load-bundled-observers!)
   (load-bundled-journals!)
+  (load-external-scripts!)
   (load-scripts! input-paths))

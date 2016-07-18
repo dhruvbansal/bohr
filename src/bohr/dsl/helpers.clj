@@ -3,6 +3,7 @@
 
 (ns bohr.dsl.helpers
   (:require [clojure.string  :as string]
+            [clojure.tools.logging :as log]
             [clojure.java.io :as io])
   (:use clojure.java.shell
         bohr.observers

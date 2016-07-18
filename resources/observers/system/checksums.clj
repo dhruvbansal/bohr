@@ -24,5 +24,5 @@
             "file"
             (file-checksum file)
             :desc (format "MD5 checksum of %s" (:path file))
-            :attributes { :role (:role file) }
+            :attributes { :contents (:contents file) }
             :tags ["last"])))

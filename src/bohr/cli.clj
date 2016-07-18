@@ -21,21 +21,23 @@
   [current-options current-option-id current-option-value]
   (update-in current-options [current-option-id] conj current-option-value))
 
-;; Default command-line options.
-(def  ^{:private true} default-cli-options { :loop false })
-
 ;; Options for the command-line parser.
 (def  ^{:private true} cli-parser-options
   [
    ["-v" "--verbose"    "Log DEBUG statements (repeat for TRACE)." :default 0 :assoc-fn option-incrementer]
 
    ["-c" "--config PATH" "Read configuration file/dir at the given path.  Can be given more than once."        :default [] :assoc-fn option-appender]
+   
    ["-X" "--exclude-observer PATTERN" "Don't run observers with matching names.  Can be given more than once." :default [] :assoc-fn option-appender :id :exclude-observers] ; pluralize :id to match configuration file syntax
    ["-I" "--include-observer PATTERN" "Only run observers with matching names.  Can be given more than once."  :default [] :assoc-fn option-appender :id :include-observers] ; pluralize :id to match configuration file syntax
 
+   ["-x" "--exclude-observation PATTERN" "Don't submit observations with matching names.  Can be given more than once." :default [] :assoc-fn option-appender :id :exclude-observations] ; pluralize :id to match configuration file syntax
+   ["-i" "--include-observation PATTERN" "Only submit observations with matching names.  Can be given more than once."  :default [] :assoc-fn option-appender :id :include-observations] ; pluralize :id to match configuration file syntax
+   
    ["-h" "--help"       "Print this help"                                          :default false]
-   ["-s" "--submit"     "Submit reports to journals instead of just printing them" :default false]
-   ["-l" "--loop"       "Run continuously instead of just once"                    :default false]
+   ["-o" "--once"       "Submit all reports, once"                                 :default false]
+   ["-p" "--periodic"   "Run continuously, periodically submitting reports"        :default false]
+
    ["-V" "--version"    "Print version and exit"                                   :default false]
    ])
 
@@ -45,7 +47,7 @@
   The argument `options-summary` is returned by the `parse-opts`
   function."
   [options-summary]
-  (->> ["usage: bohr [options] [SCRIPT ...]
+  (->> ["usage: bohr [OPTIONS] [SCRIPT ...]
 
 Bohr is a scientist who observes your system and takes many
 readings. He periodically writes reports which he submits to several
@@ -56,34 +58,34 @@ When run without any arguments
   $ bohr
 
 Bohr will observe a standard set of system metrics (CPU, memory, disk,
-&c.) and submit a single round of reports which will be printed to
-console.
+&c.) and summarize his findings in a table pretty-printed to console.
 
-Define your own observations for Bohr to make via Clojure scripts in
-Bohr's DSL.  You can pass these scripts to Bohr directly:
+When run with the --once (or -o) flag
 
-  $ bohr my_observer.clj ...
+  $ bohr --once
+  $ bohr -o
 
-Bohr will make your observation in addition to his usual set of system
-metrics.
+Bohr will make observations and submit them to journals ONCE, instead
+of just printing a summary, as above.
 
-When run with the --submit flag
+When run with the --periodic (or -p) flag
 
-  $ bohr --submit
+  $ bohr --periodic
+  $ bohr -p
 
-Bohr will submit his reports to journals, instead of just printing
-them to the console.  You can provide additional journals on the
-command line
+Bohr will run continuously, periodically making observations and
+submitting them to journals.
 
-  $ bohr my_journal.clj --submit
+You can define your own observations for Bohr to make and journals for
+Bohr to submit to by writing Clojure scripts in Bohr's DSL.  You can
+pass this scripts directly to Bohr
 
-This can, of course, be combined with additional observers, too:
+  $ bohr my_observer.clj my_journal.clj ...
 
-  $ bohr my_observer.clj my_journal.clj --submit
+Bohr will also read the above configuration (as well as more) from a
+configuration file or directory
 
-When the `--loop' flag is passed, Bohr will run forever, continuously
-performing observations and submitting reports (`--loop` implies
-`--submit`) till he dies.  Silly guy."
+  $ bohr --config /etc/bohr/bohr.yml --config /etc/bohr/conf.d"
         ""
         "Options:"
         options-summary
@@ -116,14 +118,14 @@ performing observations and submitting reports (`--loop` implies
   Otherwise, return a 2-element vector consisting of the parsed
   command-line arguments and options."
   [cli-args]
-  (let [{:keys [options arguments errors summary]} (parse-opts cli-args cli-parser-options)
-        runtime-options (merge default-cli-options options)]
-    
+  (let [{:keys [options arguments errors summary]}
+        (parse-opts cli-args cli-parser-options)]
+
     (cond
-      (:help runtime-options)
+      (:help options)
       (exit! 1 (usage summary))
 
-      (:version runtime-options)
+      (:version options)
       (do
         (println (System/getProperty "bohr.version"))
         (exit!))
@@ -135,4 +137,4 @@ performing observations and submitting reports (`--loop` implies
         (exit! 2))
       
       :else
-      [arguments runtime-options])))
+      [arguments options])))

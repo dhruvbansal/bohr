@@ -8,7 +8,8 @@
             [clojure.tools.logging :as log]
             [clojure.string :as string])
   (:use bohr.observers
-        bohr.config))
+        bohr.config
+        bohr.utils))
 
 ;; The set of Bohr journals.
 ;;
@@ -124,13 +125,13 @@
   [name value options]
   (println
    (format
-    "%s\t%s\t%s %s\t%s\t%s"
+    "%s\t%s\t%s\t%s\t%s\t%s"
     (time/now)
     name
-    value
-    (or (:units options) "")
-    (string/join "," (or (:tags options) []))
-    (or (:desc options) ""))))
+    (formatted-tags options)
+    (formatted-attributes options)
+    (formatted-value-with-units value options)
+    (formatted-description options))))
 
 (defn ensure-some-journal!
   "If no journals are defined, will define a journal `console` using
