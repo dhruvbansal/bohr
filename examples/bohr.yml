@@ -1,52 +1,83 @@
 ---
 
-# == Overview ==
+# This is an example configuration file for Bohr.
+
+################################################################################
 #
-# This is an example YAML configuration file for Bohr.
+# = General Configuration =
 #
-# Uncommented sections correspond to Bohr defaults so can be loaded
-# without modification.
+# These settings control Bohr's overall behavior, most importantly
+# what observers and journals are loaded.
 #
-# Commented sections can be uncommented and modified to suit your
-# needs.
+# Observers and journals can be loaded from those bundled with Bohr or
+# those discovered at runtime.
+#
+################################################################################
 
 
 #
 # == Observers ==
 #
-
-# Bohr ships with several bundled observers, all of which will be
-# loaded by default unless you uncomment the following section and
-# specify subsections.
+#
+# Bohr ships with several bundled observers.  By default, the 'system'
+# (CPU, memory, disk, network, &c.) observers and the Bohr observer
+# will be loaded.  You can include additional bundled observers or
+# restrict this default set by setting the `observers` value below.
+#
+# Bundled observers are really Java resources so each value below is a
+# (partial) regular expression that will match the path of some
+# observer Clojure (.clj) file within the resources/observers
+# directory.
+#
+# The regular expression 'system/.*' will, for example, be expanded
+# into 'observers/system/.*\\.clj'.
 # 
-# bundled-observers:
-#   - 'system/*.clj'
-#   - 'elasticsearch/*.clj'
-
-#
-# == External Scripts ==
-#
-
-# External scripts, whether defining observers or journals or anything
-# else, can be loaded below:
-#
-# load:
-#   - /var/lib/bohr/*.clj
-
+# observers:
+#   - bohr
+#   - system/.*
 
 #
 # == Journals ==
 #
-
 # Bohr ships with several bundled journals.  None of these journals
-# will be used by default unless declared here (though Bohr will
-# default to the 'console' journal at runtime if it can't find any
-# others).
-# 
-# bundled-journals:
-#   - console
+# will be used by default, though Bohr will default to the 'console'
+# journal at runtime if it can't find any others. To load journals
+# bundled with Bohr, set the `journals` value below.
+#
+# Bundled journals are really Java resources so each value below is a
+# (partial) regular expression that will match the path of some
+# journal Clojure (.clj) file within the resources/journals directory.
+#
+# The regular expression 'riemann' will, for example, be expanded
+# into 'journals/riemann\\.clj'.
+#
+# journals:
 #   - riemann
+#   - console
 
+
+#
+# == External Scripts ==
+#
+# External scripts, whether defining observers or journals or anything
+# else, can be loaded below.
+#
+# Each entry will be treated as a shell-like glob from which matching
+# files will be loaded.
+#
+# load:
+#   - /var/lib/bohr/*.clj
+
+################################################################################
+#
+# = Journal-Specific Configuration =
+#
+# Most journals will require additional configuration to specify
+# hosts, ports, credentials, &c.  These configurations are listed
+# below.  They are uncommented because unless their corresponding
+# journals are loaded (above), they have no effect.
+#
+################################################################################
 
 #
 # == Riemann Journal ==
@@ -60,24 +91,64 @@
 riemann:
     host: localhost
 
+################################################################################
 #
-# == Expected Processes ==
+# = Observer-Specific Configuration =
 #
-# ps.expected:
+# Some observers will require additional configuration to make their
+# observations, e.g. - the 'ps' observer normally counts the numbers
+# of processes in various states, but when the 'ps.expected'
+# configuration value is defined, it will additionally report on the
+# state of particular processes listed.
+#
+# Such an observer may need to observe many different instances of its
+# subject (e.g. - many different, particular processes) corresponding
+# to particular applications.  Bohr's configuration parsing is smart
+# so that the same key (e.g. - 'ps.expected') can be provided in
+# multiple configuration files and merged intelligently.
+#
+################################################################################
+
+#
+# == Processes ==
+#
+# Declare particular processes whose state will be individually
+# tracked.
+#
+# - name: The name of the processes (used as an attribute)
+# - user: The name of the user running the process
+# - cmd:  A regular expression matching the process's command line
+#
+# processes.tracked:
 #   - name: my_app
 #     user: my_app_user
 #     cmd:  my_appd
 
 #
-# == File Checksums ==
+# == Files ==
 #
-# checksum.files:
-#   - path: /etc/passwd
-#   - path: /etc/group
+# Declare particular files whose state will be individually tracked.
+#
+# - contents: description of the file's contents
+# - path: the path of the file
+#
+# files.tracked:
+#   - contents: user.list
+#     path: /etc/passwd
+#   - contents: group.list
+#     path: /etc/group
 
 #
-# == Directories Tracked ==
+# == Directories ==
 #
-# dirs.tracked:
-#   - path: /etc/passwd
-#   - path: /etc/group
+# Declare particular directories whose state will be individually
+# tracked.
+#
+# - contents: description of the directory's contents
+# - path: the path of the directory
+#
+# directories.tracked:
+#   - contents: elasticsearch.log
+#     path: /var/log/elasticsearch
+#   - contents: elasticsearch.data
+#     path: /data/elasticsearch

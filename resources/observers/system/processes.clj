@@ -32,43 +32,52 @@
      :zombie   { :value @zombie   :desc "Number of zombie processes"   }
      :other    { :value @other    :desc "Number of processes in other states" }}))
 
-(def missing-process-state "X")
+(def default-user-pattern-string  ".")
+(def default-cmd-pattern-string   ".")
+(def default-state-pattern-string "[^Z]")
 
 (defn- submit-expected-process-state [table expected-process-name expected-process-info]
   (let [metric-desc
-        (format "State of process %s" (name expected-process-name))
+        (format "Number of %s processes" (name expected-process-name))
 
         user-pattern
         (re-pattern
-         (if (map? expected-process-info)
-           (or (get expected-process-info :user) #"\.")
-           #"\."))
+         (or
+          (get expected-process-info :user)
+          default-user-pattern-string))
         
         cmd-pattern
         (re-pattern
-         (if (map? expected-process-info)
-           (or (get expected-process-info :cmd) #"\.")
-           expected-process-info))
+           (or
+            (get expected-process-info :cmd)
+            default-cmd-pattern-string))
+
+        state-pattern
+        (re-pattern
+           (or
+            (get expected-process-info :state)
+            default-state-pattern-string))
         
-        process
-        (first
-         (filter
-          #(and
-            (re-find cmd-pattern  (get % :cmd))
-            (re-find user-pattern (get % :user)))
-          table))
+        matching-processes
+        (filter
+         #(and
+           (re-find cmd-pattern   (get % :cmd))
+           (re-find user-pattern  (get % :user))
+           (re-find state-pattern (get % :state)))
+         table)
+        
+        matching-process-count
+        (count matching-processes)
         ]
     (submit
-     "state"
-     (if process
-       (get process :state)
-       missing-process-state)
+     "count"
+     matching-process-count
      :desc metric-desc
      :attributes { :name (name expected-process-name) }
-     :tags ["last"])))
+     :tags ["metric"])))
         
 (defn- expected-processes []
-  (or (get-config :ps.expected) {}))
+  (or (get-config :processes.tracked) {}))
 
 (observe :ps :period 10 :prefix "ps"
          (let [table (process-table)]

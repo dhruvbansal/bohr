@@ -63,25 +63,86 @@
   (doseq [input-path input-paths]
     (load-script! input-path)))
 
-;; Default bundled observers to load.  Will match all observers.
-(def default-bundled-observers ["*/*.clj"])
-  
+(defn- uberjar?
+  "Is Bohr currently running from an lein uberjar?"
+  ;; If the 'resources/observers' directory exists on disk, then we
+  ;; are NOT running from within an uberjar.
+  []
+  (-> "observers" io/resource .getPath io/file .exists not))
+
+(def ^:private running-jar 
+  "Resolves the path to the current running jar file."
+  (-> :keyword class (.. getProtectionDomain getCodeSource getLocation getPath)))
+
+(defn- list-resources-in-jar
+  "Return a list of all resources in the currently running jar."
+  []
+  (let [jar (java.util.jar.JarFile. running-jar)
+        entries (.entries jar)]
+    (loop [result  []]
+      (if (.hasMoreElements entries)
+        (recur (conj result (.. entries nextElement getName)))
+        result))))
+
+(def ^:private resources-dir
+  "The local directory containing resources (if not running as an uberjar)."
+  (-> "observers" io/resource .getPath io/file .getParentFile))
+
+(defn- list-resources-on-disk
+  "Return a list of all resources available as files on disk."
+  []
+  (map
+   (fn [file]
+     (subs
+      (.getPath file)
+      (+ 1
+         (-> resources-dir .getPath .length))))
+   (filter
+    (fn [file]
+      (not
+       (= resources-dir file)))
+    (file-seq resources-dir))))
+
+(defn- list-resources
+  "Return a list of resources, from disk or uberjar as appropriate."
+  []
+  (if (uberjar?)
+    (list-resources-in-jar)
+    (list-resources-on-disk)))
+
+(defn- load-matching-bundled-scripts!
+  "Loads each script from the bundled resources matching the
+  pattern-string."
+  [pattern-strings]
+  (let [bundled-resources (list-resources)]
+    (doseq [pattern-string pattern-strings]
+      (let [pattern (re-pattern pattern-string)]
+        (doseq [bundled-resource bundled-resources]
+          (if (re-find pattern bundled-resource)
+            (load-script-file! (io/resource bundled-resource))))))))
+
+;; Default bundled observers to load.  Will match system observers and
+;; the Bohr observer.
+(def default-bundled-observers ["observers/bohr\\.clj", "observers/system/.*\\.clj"])
+
+;; Default bundled journals to load.  Will match no journals.
+(def default-bundled-journals [])
+
 (defn- load-bundled-observers!
   "Load observers bundled with Bohr.
 
-  This can be controlled via the `observers` setting in the
-  configuration file."
+  Uses the `bundled-observers` setting in the configuration file."
   []
-  (doseq [pattern (get-config :bundled-observers default-bundled-observers)]
-    (doseq [path (glob (format "%s/%s" (.getPath (io/resource "observers")) pattern))]
-      (load-script! path))))
+  (load-matching-bundled-scripts!
+   (get-config :bundled-observers default-bundled-observers)))
 
 (defn- load-bundled-journals!
-  "Load journals bundled with Bohr."
+  "Load journals bundled with Bohr.
+
+  Uses the `bundled-journals` setting in the configuration file."
   []
-  (doseq [pattern (get-config :bundled-journals [])]
-    (doseq [path (glob (format "%s/%s" (.getPath (io/resource "journals")) pattern))]
-      (load-script! path))))
+  (load-matching-bundled-scripts!
+   (get-config :bundled-journals default-bundled-journals)))
 
 (defn- load-external-scripts!
   "Load external scripts specified in configuration."

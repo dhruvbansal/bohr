@@ -5,7 +5,7 @@
    })
 
 (defn- dirs-to-track []
-  (or (get-config :dirs.tracked) {}))
+  (or (get-config :directories.tracked) {}))
 
 (defn- dir-size [dir]
   (Long/parseLong
