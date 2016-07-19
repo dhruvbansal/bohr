@@ -306,12 +306,12 @@
   later files taking precedence.  This merge is done intelligently,
   allowing for configurations such as the following example using the
   =ps= observer, which can be configured to watch the processes
-  defined in the =ps.expected= list:
+  defined in the =processes.tracked= list:
   
 #+BEGIN_SRC yaml
   # in app1.yml
   ---
-  ps.expected:
+  processes.tracked:
     - name: app1
       user: app1_user
       cmd:  'java.*com.example.app1.*start'
@@ -320,7 +320,7 @@
 #+BEGIN_SRC yaml
   # in app2.yml
   ---
-  ps.expected:
+  processes.tracked:
     - name: app2
       user: root
       cmd:  'python.*app2'
@@ -333,7 +333,7 @@
 #+END_SRC
   
   would cause the =ps= observer to watch *both* applications as the
-  =ps.expected= lists are concatenated during the merge.  This
+  =processes.tracked= lists are concatenated during the merge.  This
   intelligent merging also works for hashes.
   
   The end-result is that it is easy to shard Bohr's configuration
