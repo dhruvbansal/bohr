@@ -36,26 +36,26 @@
 (def default-cmd-pattern-string   ".")
 (def default-state-pattern-string "[^Z]")
 
-(defn- submit-expected-process-state [table expected-process-name expected-process-info]
+(defn- submit-expected-process-state [table expected-process]
   (let [metric-desc
-        (format "Number of %s processes" (name expected-process-name))
+        (format "Number of %s processes" (:name expected-process))
 
         user-pattern
         (re-pattern
          (or
-          (get expected-process-info :user)
+          (get expected-process :user)
           default-user-pattern-string))
         
         cmd-pattern
         (re-pattern
            (or
-            (get expected-process-info :cmd)
+            (get expected-process :cmd)
             default-cmd-pattern-string))
 
         state-pattern
         (re-pattern
            (or
-            (get expected-process-info :state)
+            (get expected-process :state)
             default-state-pattern-string))
         
         matching-processes
@@ -73,15 +73,14 @@
      "count"
      matching-process-count
      :desc metric-desc
-     :attributes { :name (name expected-process-name) }
+     :attributes { :name (:name expected-process) }
      :tags ["metric"])))
         
 (defn- expected-processes []
-  (or (get-config :processes.tracked) {}))
+  (or (get-config :processes.tracked) []))
 
 (observe :ps :period 10 :prefix "ps"
          (let [table (process-table)]
            (submit-many (process-counts-by-state table) :tags ["metric"])
-           (doseq [[process-name process-info] (seq (expected-processes))]
-             (submit-expected-process-state table process-name process-info))))
-
+           (doseq [expected-process (expected-processes)]
+             (submit-expected-process-state table expected-process))))
