@@ -342,7 +342,7 @@
   them.  This is especially useful from a DevOps perspective.
   
   
-* Available Observers
+* Observers
   :PROPERTIES:
   :CUSTOM_ID: observers
   :END:
@@ -351,7 +351,7 @@
   
   TBD -- just run `bohr` for now and look at its summary...
   
-* Available Journals
+* Journals
   :PROPERTIES:
   :CUSTOM_ID: journals
   :END:
@@ -369,7 +369,7 @@
   - [[https://www.elastic.co/products/logstash][Logstash]] (coming soon)
   - a local file (coming soon)
     
-* Customizing Bohr
+* Customizing
   :PROPERTIES:
   :CUSTOM_ID: customizing
   :END:
@@ -446,7 +446,7 @@
    
    See the [[file:resources/journals][built-in journals]] for more detailed examples.
    
-* Contributing to Bohr
+* Contributing
   :PROPERTIES:
   :CUSTOM_ID: contributing
   :END:
