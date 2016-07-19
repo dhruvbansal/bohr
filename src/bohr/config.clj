@@ -64,6 +64,22 @@
        :else later-value))
    configs))
 
+(def ^{:private true } pattern-string-configs
+  [:exclude-observers :include-observers
+   :exclude-observations :include-observations])
+
+(defn get-config
+  "Return the value of the configuration `key`."
+  ([key]
+   (get @bohr-config key))
+  ([key default]
+   (get @bohr-config key default)))
+
+(defn set-config!
+  "Set the value of the configuration `key`."
+  [key value]
+  (swap! bohr-config assoc key value))
+
 (defn load-config!
   "Load configuration from the given `cli-options`.
 
@@ -81,11 +97,10 @@
       (flatten
        (concat
         [@bohr-config cli-options]
-        (map read-config config-paths)))))))
-
-(defn get-config
-  "Return the value of the configuration `key`."
-  ([key]
-   (get @bohr-config key))
-  ([key default]
-   (get @bohr-config key default)))
+        (map read-config config-paths)))))
+    (doseq [config-name pattern-string-configs] 
+      (set-config!
+       config-name
+       (map
+        #(re-pattern %)
+        (get-config config-name []))))))

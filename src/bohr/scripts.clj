@@ -123,7 +123,7 @@
 
 ;; Default bundled observers to load.  Will match system observers and
 ;; the Bohr observer.
-(def default-bundled-observers ["observers/bohr\\.clj", "observers/system/.*\\.clj"])
+(def default-bundled-observers ["bohr", "system/.*"])
 
 ;; Default bundled journals to load.  Will match no journals.
 (def default-bundled-journals [])
@@ -134,7 +134,10 @@
   Uses the `bundled-observers` setting in the configuration file."
   []
   (load-matching-bundled-scripts!
-   (get-config :bundled-observers default-bundled-observers)))
+   (map
+    (fn [pattern-string]
+      (format "observers/%s\\.clj" pattern-string))
+    (get-config :bundled-observers default-bundled-observers))))
 
 (defn- load-bundled-journals!
   "Load journals bundled with Bohr.
@@ -142,7 +145,10 @@
   Uses the `bundled-journals` setting in the configuration file."
   []
   (load-matching-bundled-scripts!
-   (get-config :bundled-journals default-bundled-journals)))
+   (map
+    (fn [pattern-string]
+      (format "journals/%s\\.clj" pattern-string))
+    (get-config :bundled-journals default-bundled-journals))))
 
 (defn- load-external-scripts!
   "Load external scripts specified in configuration."

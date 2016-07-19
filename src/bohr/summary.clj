@@ -36,4 +36,4 @@
   (log/debug "Producing summary")
   (if (memory-journal-publications?)
     (table (summary-table) :sort "Observation" :desc true)
-    (log/info "No observers!")))
+    (log/info "No observations!")))

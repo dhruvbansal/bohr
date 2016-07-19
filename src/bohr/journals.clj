@@ -87,14 +87,17 @@
   [name value & args]
   (let [observation-name    (scope-observation-name name)
         observation-options (scope-observation-options (apply hash-map args))]
-    (log/trace "Submitting observation" observation-name "with value" value "and options" observation-options)
-    (doseq [[journal-name journal] (seq @journals)]
-      (if (not (contains? @disabled-journals journal-name))
-        (do
-          (journal observation-name value observation-options)
-          (swap! publications inc))))
-    (swap! submissions inc)))
-
+    (if (allowed? observation-name (get-config :exclude-observations []) (get-config :include-observations []))
+      (do
+        (log/trace "Submitting observation" observation-name "with value" value "and options" observation-options)
+        (doseq [[journal-name journal] (seq @journals)]
+          (if (not (contains? @disabled-journals journal-name))
+            (do
+              (journal observation-name value observation-options)
+              (swap! publications inc))))
+        (swap! submissions inc))
+      (log/trace "Skipping submitting observation" observation-name))))
+    
 (defn submit-many
   "Submit many observations.
 

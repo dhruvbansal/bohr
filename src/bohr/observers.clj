@@ -6,7 +6,8 @@
 
 (ns bohr.observers
   (:require [clojure.tools.logging :as log])
-  (:use bohr.config))
+  (:use bohr.config
+        bohr.utils))
 
 ;; The set of Bohr observers.
 ;;
@@ -105,49 +106,14 @@
               current-attributes (get observer :attributes {})]
       ((get observer :instructions)))))
 
-(defn- observer-allowed?
-  "Is the observer with the given `observer-name` allowed to observe,
-  given the `excluded-patterns` and `included-patterns`?"
-  [observer-name excluded-patterns included-patterns]
-  (cond
-    (and
-     (empty? excluded-patterns)
-     (empty? included-patterns))
-    true
-
-    (and
-     (not-empty excluded-patterns)
-     (empty? included-patterns))
-    (not-any?
-     #(re-find % (name observer-name))
-     excluded-patterns)
-
-    (and
-     (empty? excluded-patterns)
-     (not-empty included-patterns))
-    (some
-     #(re-find % (name observer-name))
-     included-patterns)
-
-    :else
-    (and
-     (some
-      #(re-find % (name observer-name))
-      included-patterns)
-     (not-any?
-      #(re-find % (name observer-name))
-      excluded-patterns))))
-
 (defn- allowed-observers
   "Returns a sequence of observers that are allowed given the
   configured inclusion/exclusion patterns."
   []
-  (let [excluded-patterns (map #(re-pattern %) (get-config :exclude-observers))
-        included-patterns (map #(re-pattern %) (get-config :include-observers))]
-    (filter
-     (fn [[name observer]]
-       (observer-allowed? name excluded-patterns included-patterns))
-     (seq @observers))))
+  (filter
+   (fn [[name observer]]
+     (allowed? name (get-config :exclude-observers []) (get-config :include-observers [])))
+   (seq @observers)))
 
 (defn for-each-allowed-observer
   "Successively apply a function `f` for each observer.

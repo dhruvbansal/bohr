@@ -120,7 +120,6 @@ configuration file or directory
   [cli-args]
   (let [{:keys [options arguments errors summary]}
         (parse-opts cli-args cli-parser-options)]
-
     (cond
       (:help options)
       (exit! 1 (usage summary))
