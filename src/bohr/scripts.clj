@@ -137,7 +137,7 @@
    (map
     (fn [pattern-string]
       (format "observers/%s\\.clj" pattern-string))
-    (get-config :bundled-observers default-bundled-observers))))
+    (get-config :observers default-bundled-observers))))
 
 (defn- load-bundled-journals!
   "Load journals bundled with Bohr.
@@ -148,7 +148,7 @@
    (map
     (fn [pattern-string]
       (format "journals/%s\\.clj" pattern-string))
-    (get-config :bundled-journals default-bundled-journals))))
+    (get-config :journals default-bundled-journals))))
 
 (defn- load-external-scripts!
   "Load external scripts specified in configuration."
