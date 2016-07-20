@@ -67,9 +67,9 @@
   (parsed-df-output
    "-l -k"
    [[:name        identity]
-    [:bytes.total 1024]
-    [:bytes.used  1024]
-    [:bytes.free  1024]
+    [:space.total 1024]
+    [:space.used  1024]
+    [:space.free  1024]
     [nil          identity]
     [:mountpoint  identity]]))
 
@@ -97,9 +97,9 @@
   (parsed-df-output
    "-l -k"
    [[:name        identity]
-    [:bytes.total 1024]
-    [:bytes.used  1024]
-    [:bytes.free  1024]
+    [:space.total 1024]
+    [:space.used  1024]
+    [:space.free  1024]
     [nil          identity]
     [:inodes.used :long]
     [:inodes.free :long]
@@ -107,23 +107,21 @@
     [:mountpoint  identity]]))
 
 (defn- observe-filesystem [filesystem]
-  (doseq [unit [:bytes :inodes]]
+  (doseq [unit [:space :inodes]]
     (doseq [state [:free :used :total]]
       (submit
        (make-metric-name unit state false)
        (get filesystem (make-property-name unit state false))
        :desc (make-metric-description filesystem unit state)
-       :unit "B"
-       :attributes { :device (get filesystem :name) }
-       :tags ["metric"])
+       :units (if (= unit :space) "B")
+       :attrs { :device (get filesystem :name) :agg "mean"})
       (if (not (= :total state))
         (submit
          (make-metric-name unit state true)
          (get filesystem (make-property-name unit state true))
          :desc (make-metric-description filesystem unit state)
-         :unit "%"
-         :attributes { :device (get filesystem :name) }
-         :tags ["metric"])))))
+         :units "%"
+         :attrs { :device (get filesystem :name) :agg "mean"})))))
 
 (defn- filesystems []
   (case-os

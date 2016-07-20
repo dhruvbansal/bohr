@@ -35,5 +35,5 @@
    "Linux" (uptime-linux)
    "Mac"   (uptime-mac)))
 
-(observe :uptime :period 60 :tags ["duration"] :units "s"
+(observe :uptime :period 60 :attrs { :agg "last" } :units "s"
          (submit "uptime" (uptime) :desc "System uptime"))

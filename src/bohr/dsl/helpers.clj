@@ -54,6 +54,6 @@
         [key {:value value
               :desc  (get annotation :desc)
               :units (get annotation :units)
-              :tags  (get annotation :tags)
+              :attrs (get annotation :attrs)
               }]))
     (seq values))))

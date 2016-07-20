@@ -74,8 +74,7 @@
 #
 # Most journals will require additional configuration to specify
 # hosts, ports, credentials, &c.  These configurations are listed
-# below.  They are uncommented because unless their corresponding
-# journals are loaded (above), they have no effect.
+# below.
 #
 ################################################################################
 
@@ -86,10 +85,15 @@
 # Configuration values for the 'riemann' key are passed directly to
 # the official Riemann Clojure client.
 #
+# The 'riemann.tags' key is a list of Riemann tags that will be
+# applied to all events sent by Bohr to Riemann.
+#
 # See https://github.com/riemann/riemann-clojure-client for details.
 # Default value is below
-riemann:
-    host: localhost
+# riemann:
+#     host: localhost
+#     tags:
+#       - bohr
 
 ################################################################################
 #

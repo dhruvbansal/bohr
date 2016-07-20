@@ -73,14 +73,13 @@
      "count"
      matching-process-count
      :desc metric-desc
-     :attributes { :name (:name expected-process) }
-     :tags ["metric"])))
+     :attrs { :name (:name expected-process) :agg "mean"})))
         
 (defn- expected-processes []
   (or (get-config :processes.tracked) []))
 
 (observe :ps :period 10 :prefix "ps"
          (let [table (process-table)]
-           (submit-many (process-counts-by-state table) :tags ["metric"])
+           (submit-many (process-counts-by-state table) :attrs { :agg "mean" })
            (doseq [expected-process (expected-processes)]
              (submit-expected-process-state table expected-process))))

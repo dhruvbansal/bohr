@@ -29,7 +29,6 @@
 (def ^{:dynamic true} current-prefix nil)
 (def ^{:dynamic true} current-suffix nil)
 (def ^{:dynamic true} current-units nil)
-(def ^{:dynamic true} current-tags nil)
 (def ^{:dynamic true} current-attributes nil)
 
 (defn- observer?
@@ -79,8 +78,7 @@
     - :prefix : A prefix to add to the name of any submissions made by the observer.
     - :suffix : A suffix to add to the name of any submissions made by the observer.
     - :units : Default units for any submissions made by the observer.
-    - :tags : Default tags for any submissions made by the observer.
-    - :attributes : Default key-value pairs for any submissions made by the observer.
+    - :attrs : Default key-value pairs for any submissions made by the observer.
   - `instructions` : A function (taking no arguments) which makes
   observations and calls the `submit` or `submit-many` functions in
   journals.clj."
@@ -102,8 +100,7 @@
               current-prefix     (get observer :prefix)
               current-suffix     (get observer :suffix)
               current-units      (get observer :units)
-              current-tags       (get observer :tags [])
-              current-attributes (get observer :attributes {})]
+              current-attributes (get observer :attrs {})]
       ((get observer :instructions)))))
 
 (defn- allowed-observers

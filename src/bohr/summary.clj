@@ -11,7 +11,6 @@
    (str (get-observer observer-name :period))
    (name observer-name)
    (name row-name)
-   (formatted-tags options)
    (formatted-attributes options)
    (formatted-description options)
    (formatted-value-with-units value options)
@@ -22,7 +21,7 @@
    (map
     (fn [publication] (apply summary-row publication))
     @memory-journal-publications)
-   (list "Period (s)", "Observer" "Observation", "Tags" "Attributes" "Description" "Value (Units)")))
+   (list "Period (s)", "Observer" "Observation", "Attributes" "Description" "Value (Units)")))
 
 (defn prepare-for-summarize! []
   (reset!

@@ -1,6 +1,6 @@
 (def dir-annotations
   {
-   :size  { :desc "Total size of directory" :units "B" } 
+   :size  { :desc "Total size of directory" :units "B" }
    :files { :desc "Total number of files" }
    })
 
@@ -22,6 +22,6 @@
    {:size (dir-size dir) :files (file-count dir) }
    dir-annotations))
    
-(observe :dir :period 300 :prefix "dir" :tags ["metric"]
+(observe :dir :period 300 :prefix "dir" :attrs { :agg "mean" }
          (doseq [dir (seq (dirs-to-track))]
-           (submit-many (dir-summary dir) :attributes { :contents (:contents dir) })))
+           (submit-many (dir-summary dir) :attrs { :contents (:contents dir) })))

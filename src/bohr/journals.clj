@@ -54,18 +54,14 @@
         
 (defn- scope-observation-options
   "Scope the options of an observation using the current description,
-  units, and tags."
+  units, and attributes."
   [options]
    {
     :desc  (get options :desc)
     :units (or (get options :units) current-units)
-    :tags  (distinct
-            (concat
-             (or (get options :tags) [])
-             current-tags))
-    :attributes (merge-configs
+    :attrs (merge-configs
                  [current-attributes
-                 (get options :attributes {})])
+                 (get options :attrs {})])
     })
 
 (defn submit
@@ -77,8 +73,7 @@
   - :prefix : add a prefix for the observation's name
   - :suffix : add a suffix for the observation's name
   - :units : set the observation's units
-  - :tags : set the observation's tags
-  - :attributes : set the observation's attributes
+  - :attrs : set the observation's attributes
 
   The above options will be scoped appropriately.
 
@@ -108,13 +103,12 @@
     (binding [current-prefix     (string/join "." (filter identity [current-prefix (get options :prefix)]))
               current-suffix     (string/join ""  (filter identity [current-suffix (get options :suffix)]))
               current-units      (get options :units current-units)
-              current-tags       (distinct (concat current-tags (get options :tags [])))
-              current-attributes (merge-configs [current-attributes (get options :attributes {})])]
+              current-attributes (merge-configs [current-attributes (get options :attrs {})])]
       (doseq [[name value] values]
         (if (and
              (map? value)
              (contains? value :value))
-          (submit name (get value :value) :units (get value :units current-units) :desc (get value :desc) :tags (get value :tags current-tags))
+          (submit name (get value :value) :units (get value :units current-units) :desc (get value :desc) :attrs (get value :attrs current-attributes))
           (submit name value))))))
 
 (defn define-journal!
@@ -128,10 +122,9 @@
   [name value options]
   (println
    (format
-    "%s\t%s\t%s\t%s\t%s\t%s"
+    "%s\t%s\t%s\t%s\t%s"
     (time/now)
     name
-    (formatted-tags options)
     (formatted-attributes options)
     (formatted-value-with-units value options)
     (formatted-description options))))

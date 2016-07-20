@@ -18,15 +18,6 @@
     (:units options)
     " ")))
 
-(defn formatted-tags [options]
-  (string/join
-   ","
-   (sort
-    (seq
-     (or
-      (:tags options)
-      [])))))
-
 (defn formatted-attributes [options]
   (string/join
    ","
@@ -36,7 +27,7 @@
               (name k)
               v))
     (seq
-     (or (:attributes options)
+     (or (:attrs options)
          {})))))
 
 (defn formatted-description [options]

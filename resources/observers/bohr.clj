@@ -10,8 +10,8 @@
 
 (observe :bohr :period 5 :prefix "bohr"
          (do
-           (submit "runtime"             (bohr-runtime) :units "s" :desc "Bohr uptime" :tags ["duration"])
-           (submit "observers"           (observer-count) :desc "Number of defined observers" :tags ["metric"])
-           (submit "observations"        @observations :desc "Number of observations made" :tags ["counter"])
-           (submit "metrics.gathered"    @submissions :desc "Number of unique metrics gathered" :tags ["counter"])
-           (submit "metrics.transmitted" @publications :desc "Number of metrics transmitted via all journals" :tags ["counter"])))
+           (submit "runtime"             (bohr-runtime) :units "s" :desc "Bohr uptime" :attrs { :agg "last" })
+           (submit "observers"           (observer-count) :desc "Number of defined observers" :attrs {:agg "mean" })
+           (submit "observations"        @observations :desc "Number of observations made" :attrs { :agg "last" :counter true })
+           (submit "metrics.gathered"    @submissions :desc "Number of unique metrics gathered" :attrs { :agg "last" :counter true })
+           (submit "metrics.transmitted" @publications :desc "Number of metrics transmitted via all journals" :attrs { :agg "last" :counter true })))

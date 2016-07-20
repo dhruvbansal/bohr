@@ -12,5 +12,5 @@
 
 (observe :users :period 60
          (do
-           (submit "users.count" (user-count) :tags ["metric"] :desc "Total number of system users")
-           (submit "groups.count" (group-count) :tags ["metric"] :desc "Total number of system groups")))
+           (submit "users.count" (user-count) :attrs { :agg "mean" } :desc "Total number of system users")
+           (submit "groups.count" (group-count) :attrs { :agg "mean" } :desc "Total number of system groups")))

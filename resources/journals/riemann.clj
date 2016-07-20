@@ -10,25 +10,24 @@
 
 (def ^{:private true} publication-responses (atom []))
 
+(def riemann-default-tags ["bohr"])
+
+(defn- riemann-tags []
+  (get client-config :tags riemann-default-tags))
+
 (defn- event-from-observation [name value options]
-  (let [event
-        {:service     name
-         :tags        (get options :tags [])
-         :description (get options :desc)
-         :attributes  (get options :attributes {})
-         }
-
-        event-with-units
-        (if (get options :units)
-          (assoc event :attributes
-                 (assoc (get :attributes event) :units (get options :units)))
-          event)
-
-        event-with-value
-        (if (number? value)
-          (assoc event-with-units :metric value)
-          (assoc event-with-units :state (str value)))]
-    event-with-value))
+  (let [riemann-attributes
+        (if (:units options)
+          (assoc (get options :attrs {}) :units (:units options))
+          (get options :attrs {}))]
+  (assoc
+   {:service     name
+    :description (get options :desc)
+    :attributes  riemann-attributes
+    :tags        (riemann-tags)
+    }
+   (if (number? value) :metric :state)
+   (if (number? value) value   (str value)))))
 
 (defn riemann-journal [name value options]
   (let [event (event-from-observation name value options)]

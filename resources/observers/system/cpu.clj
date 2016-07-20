@@ -82,23 +82,23 @@
 
 (def time-annotations-linux
   {
-    :user         { :desc "Time spent in user mode" :units "s" :tags ["counter"] }
-    :nice         { :desc "Time spent in user mode with low priority (nice)" :units "s" :tags ["counter"] }
-    :system       { :desc "Time spent in system mode" :units "s" :tags ["counter"] }
-    :idle         { :desc "Time spent in the idle task" :units "s" :tags ["counter"] }
-    :iowait       { :desc "Time waiting for I/O to complete" :units "s" :tags ["counter"] }
-    :irq          { :desc "Time servicing interrupts" :units "s" :tags ["counter"] }
-    :softirq      { :desc "Time servicing softirqs" :units "s" :tags ["counter"] }
-    :steal        { :desc "Time stolen (spent in other OS when running in a VM)" :units "s" :tags ["counter"] }
-    :guest        { :desc "Time spent running a VM" :units "s" :tags ["counter"] }
-    :guest-nice   { :desc "Time spent running a niced guest" :units "s" :tags ["counter"] }
+    :user         { :desc "Time spent in user mode" :units "s" :attrs { :agg "last" :counter true }}
+    :nice         { :desc "Time spent in user mode with low priority (nice)" :units "s" :attrs { :agg "last" :counter true }}
+    :system       { :desc "Time spent in system mode" :units "s" :attrs { :agg "last" :counter true }}
+    :idle         { :desc "Time spent in the idle task" :units "s" :attrs { :agg "last" :counter true }}
+    :iowait       { :desc "Time waiting for I/O to complete" :units "s" :attrs { :agg "last" :counter true }}
+    :irq          { :desc "Time servicing interrupts" :units "s" :attrs { :agg "last" :counter true }}
+    :softirq      { :desc "Time servicing softirqs" :units "s" :attrs { :agg "last" :counter true }}
+    :steal        { :desc "Time stolen (spent in other OS when running in a VM)" :units "s" :attrs { :agg "last" :counter true }}
+    :guest        { :desc "Time spent running a VM" :units "s" :attrs { :agg "last" :counter true }}
+    :guest-nice   { :desc "Time spent running a niced guest" :units "s" :attrs { :agg "last" :counter true }}
     })
 
 (def time-annotations-mac
   {
-   :user         { :desc "Time spent in user mode"     :units "%" :tags ["metric"] }
-   :system       { :desc "Time spent in system mode"   :units "%" :tags ["metric"] }
-   :idle         { :desc "Time spent in the idle task" :units "%" :tags ["metric"] }
+   :user         { :desc "Time spent in user mode"     :units "%" :attrs { :agg "mean" } }
+   :system       { :desc "Time spent in system mode"   :units "%" :attrs { :agg "mean" } }
+   :idle         { :desc "Time spent in the idle task" :units "%" :attrs { :agg "mean" } }
    })
 
 (defn- cpu-time []
@@ -108,7 +108,7 @@
    "Mac"
    (annotate (time-mac) time-annotations-mac)))
 
-(observe :cpu.load :period 5, :prefix "cpu.load" :tags ["metric"]
+(observe :cpu.load :period 5, :prefix "cpu.load" :attrs { :agg "mean" }
          (submit-many (load-average)))
 
 (observe :cpu.time :period 5, :prefix "cpu.time"

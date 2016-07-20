@@ -123,9 +123,6 @@
     - description :: A string decribing the observation. [Default:
 		     =nil=]
 
-    - tags :: A list of string tags to associate with the
-	      observation. [Default: =[]=]
-
     - attributes :: A map of key-value pairs to associate with the
 		    observation. [Default: ={}=]
 *** Observers
@@ -406,7 +403,6 @@
    - prefix :: A prefix to add to the name of any observations made by the observer.
    - suffix :: A suffix to add to the name of any observations made by the observer.
    - units :: Default units for any observations made by the observer.
-   - tags :: Default tags for any observations made by the observer.
    - attributes :: Default key-value pairs for any observations made by the observer.
 		   
    Observers also contain a function which should implement making the
@@ -428,7 +424,6 @@
    - options :: A map with the following keys:
      - units :: The units of the value (e.g. - "B", "s", '%", &c.)
      - desc :: A description of the observation (e.g. - "Percentage of memory free")
-     - tags :: An array of tags describing the observation (e.g. - ["counter"])
      - attributes :: Arbitrary key-value data about the observation
 		     
    and publishes this to some downstream data store or service.  A

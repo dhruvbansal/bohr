@@ -1,16 +1,16 @@
 (def disk-annotations
   {
-   :reads            { :desc "Number of reads completed" :tags ["counter"]}
-   :reads-merged     { :desc "Number of reads merged" :tags ["counter"]}
-   :bytes.read       { :desc "Number of bytes read" :units "B" :tags ["counter"]}
-   :time.read        { :desc "Time spent reading" :units "ms" :tags ["counter"]}
-   :writes           { :desc "Number of writes completed" :tags ["counter"]}
-   :writes-merged    { :desc "Number of writes merged" :tags ["counter"]}
-   :bytes.written    { :desc "Number of bytes written" :units "B" :tags ["counter"]}
-   :time.write       { :desc "Time spent writing" :units "ms" :tags ["counter"]}
-   :current-io       { :desc "Number of current IOs" :tags ["metric"]}
-   :time.io          { :desc "Time spent on IO" :units "ms" :tags ["counter"]}
-   :time.io-weighted { :desc "Weighted IO time" :units "ms" :tags ["counter"]}
+   :reads            { :desc "Number of reads completed" :attrs { :agg "last" :counter true }}
+   :reads-merged     { :desc "Number of reads merged" :attrs { :agg "last" :counter true }}
+   :data.read        { :desc "Data read" :units "B" :attrs { :agg "last" :counter true }}
+   :time.read        { :desc "Time spent reading" :units "ms" :attrs { :agg "last" :counter true }}
+   :writes           { :desc "Number of writes completed" :attrs { :agg "last" :counter true }}
+   :writes-merged    { :desc "Number of writes merged" :attrs { :agg "last" :counter true }}
+   :data.written     { :desc "Data written" :units "B" :attrs { :agg "last" :counter true }}
+   :time.write       { :desc "Time spent writing" :units "ms" :attrs { :agg "last" :counter true }}
+   :current-io       { :desc "Number of current IOs" :attrs { :agg "mean" }}
+   :time.io          { :desc "Time spent on IO" :units "ms" :attrs { :agg "last" :counter true }}
+   :time.io-weighted { :desc "Weighted IO time" :units "ms" :attrs { :agg "last" :counter true }}
    })
 
 ;; FIXME -- sector size should *ideally* be determined at runtime by
@@ -30,11 +30,11 @@
      [:name             identity]
      [:reads            :long]
      [:reads-merged     :long]
-     [:bytes.read       sector-size]
+     [:data.read        sector-size]
      [:time.read        :long]
      [:writes           :long]
      [:writes-merged    :long]
-     [:bytes.written    sector-size]
+     [:data.written     sector-size]
      [:time.write       :long]
      [:current-io       :long]
      [:time.io          :long]
@@ -50,4 +50,4 @@
 
 (observe :disk :period 10 :prefix "disk"
          (doseq [[disk-name disk] (seq (disks))]
-           (submit-many disk :attributes { :device (str "/dev/" disk-name) })))
+           (submit-many disk :attrs { :device (str "/dev/" disk-name) })))
