@@ -7,22 +7,22 @@
   (first
    (string/split (name property) #"\." 2)))
 
-(defn- make-property-name [unit state pct]
-  (if pct
-    (keyword (format "%s.%s.pct" (name unit) (name state)))
+(defn- make-property-name [unit state relative]
+  (if relative
+    (keyword (format "%s.%s.relative" (name unit) (name state)))
     (keyword (format "%s.%s" (name unit) (name state)))))
 
-(defn- make-metric-name [unit state pct]
-  (name (make-property-name unit state pct)))
+(defn- make-metric-name [unit state relative]
+  (name (make-property-name unit state relative)))
 
-(defn- make-metric-description [filesystem unit state]
+(defn- make-metric-description [filesystem unit state relative]
   (format
-   "%s %s on %s"
+   (str "%s %s on %s" (if relative " (relative)" ""))
    (string/capitalize (name state))
    (name unit)
    (get filesystem :name)))
 
-(defn- pct-unit-in-states-map [filesystem unit]
+(defn- relative-unit-in-states-map [filesystem unit]
   (let [free-property  (make-property-name unit :free  false)
         used-property  (make-property-name unit :used  false)
         total-property (make-property-name unit :total false)
@@ -31,26 +31,26 @@
         used  (get filesystem used-property)
         total (get filesystem total-property (+ free used))
 
-        free-pct (* 100.0 (float (if (< 0 total) (/ free total) 0)))
-        used-pct (* 100.0 (float (if (< 0 total) (/ used total) 0)))
+        free-relative (* 100.0 (float (if (< 0 total) (/ free total) 0)))
+        used-relative (* 100.0 (float (if (< 0 total) (/ used total) 0)))
         
-        free-pct-property (make-property-name unit :free true)
-        used-pct-property (make-property-name unit :used true)]
+        free-relative-property (make-property-name unit :free true)
+        used-relative-property (make-property-name unit :used true)]
     {
      total-property
      total
-     free-pct-property
-     free-pct
-     used-pct-property
-     used-pct
+     free-relative-property
+     free-relative
+     used-relative-property
+     used-relative
      }))
 
-(defn- with-pct-properties [filesystem]
+(defn- with-relative-properties [filesystem]
   (apply
    merge
    filesystem
    (map
-    #(pct-unit-in-states-map filesystem (units-of-property %))
+    #(relative-unit-in-states-map filesystem (units-of-property %))
     (used-properties-for filesystem))))
 
 (defn- parsed-df-output [command converters]
@@ -61,7 +61,7 @@
     converters
     :start-at 2
     :row-filter #(re-find #"^/" (get % :name))
-    :transform-row with-pct-properties)))
+    :transform-row with-relative-properties)))
 
 (defn- filesystems-linux-blocks []
   (parsed-df-output
@@ -112,14 +112,14 @@
       (submit
        (make-metric-name unit state false)
        (get filesystem (make-property-name unit state false))
-       :desc (make-metric-description filesystem unit state)
+       :desc (make-metric-description filesystem unit state false)
        :units (if (= unit :space) "B")
        :attrs { :device (get filesystem :name) :agg "mean"})
       (if (not (= :total state))
         (submit
          (make-metric-name unit state true)
          (get filesystem (make-property-name unit state true))
-         :desc (make-metric-description filesystem unit state)
+         :desc (make-metric-description filesystem unit state true)
          :units "%"
          :attrs { :device (get filesystem :name) :agg "mean"})))))
 
