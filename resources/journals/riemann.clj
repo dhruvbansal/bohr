@@ -5,8 +5,8 @@
   (or (get-config :riemann) {:host "localhost"}))
 
 (case (get client-config :protocol)
-    "udp" (def  ^{:private true} client (riemann/udp-client client-config))
-    (def  ^{:private true} client (riemann/tcp-client client-config)))
+  "udp" (def  ^{:private true} client (riemann/udp-client client-config))
+  (def  ^{:private true} client (riemann/tcp-client client-config)))
 
 (def ^{:private true} publication-responses (atom []))
 
@@ -20,14 +20,15 @@
         (if (:units options)
           (assoc (get options :attrs {}) :units (:units options))
           (get options :attrs {}))]
-  (assoc
-   {:service     name
-    :description (get options :desc)
-    :attributes  riemann-attributes
-    :tags        (riemann-tags)
-    }
-   (if (number? value) :metric :state)
-   (if (number? value) value   (str value)))))
+    (assoc
+     {:service     name
+      :description (get options :desc)
+      :attributes  riemann-attributes
+      :tags        (riemann-tags)
+      :ttl         (get-observer current-observer :period)
+      }
+     (if (number? value) :metric :state)
+     (if (number? value) value   (str value)))))
 
 (defn riemann-journal [name value options]
   (let [event (event-from-observation name value options)]
