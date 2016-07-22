@@ -39,7 +39,8 @@
       :description (get options :desc)
       :attributes  riemann-attributes
       :tags        (riemann-tags)
-      :ttl         (get-observer current-observer :period)
+      :ttl         (let [ttl (get-observer current-observer :period)]
+                     (if ttl (* 3 ttl))) ; some  buffer
       }
      (if (number? value) :metric :state)
      (if (number? value) value   (str value)))))
