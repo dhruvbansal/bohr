@@ -78,6 +78,7 @@
     (use 'bohr.dsl.os)
     (use 'bohr.dsl.parsers)
     (use 'bohr.dsl.helpers)
+    (use 'bohr.dsl.schedules)
     (eval form)))
 
 (defn eval-script-content!

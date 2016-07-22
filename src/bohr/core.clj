@@ -21,6 +21,7 @@
    bohr.config   
    bohr.summary
    bohr.log
+   bohr.dsl.schedules
    )
   (:gen-class))
 
@@ -105,7 +106,13 @@
          (not (get-config :once))
          (not (get-config :periodic)))
       (summarize!))
-    (if (not (get-config :periodic)) (exit!))
+    (if (not (get-config :periodic))
+      (if (scheduled?)
+        (do 
+          (while (not (done?))
+            (Thread/sleep 5))
+          (exit!))
+        (exit!)))
     (catch clojure.lang.ExceptionInfo e
       (if (-> e ex-data :bohr)
         (log/error (.getMessage e))
