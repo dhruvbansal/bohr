@@ -24,4 +24,4 @@
    
 (observe :dir :period 300 :prefix "dir" :attrs { :agg "mean" }
          (doseq [dir (seq (dirs-to-track))]
-           (submit-many (dir-summary dir) :attrs { :contents (:contents dir) })))
+           (submit-many (dir-summary dir) :attrs { :role (:role dir) :path (:path dir) })))

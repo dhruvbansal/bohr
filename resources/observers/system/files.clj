@@ -40,5 +40,5 @@
             "checksum"
             (file-checksum file)
             :desc (format "MD5 checksum of %s" (:path file))
-            :attrs { :contents (:contents file) :agg "last"})
-           (submit-many (file-stats file) :attrs { :contents (:contents file ) :agg "mean"})))
+            :attrs { :role (:role file) :agg "last"})
+           (submit-many (file-stats file) :attrs { :role (:role file ) :path (:path file) :agg "mean"})))
