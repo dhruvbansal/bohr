@@ -30,20 +30,19 @@
   (get client-config :tags riemann-default-tags))
 
 (defn- event-from-observation [name value options]
-  (let [riemann-attributes
-        (if (:units options)
-          (assoc (get options :attrs {}) :units (:units options))
-          (get options :attrs {}))]
-    (assoc
-     {:service     name
-      :description (get options :desc)
-      :attributes  riemann-attributes
-      :tags        (riemann-tags)
-      :ttl         (let [ttl (get-observer current-observer :period)]
-                     (if ttl (* 3 ttl))) ; some  buffer
-      }
-     (if (number? value) :metric :state)
-     (if (number? value) value   (str value)))))
+  (assoc
+   (merge
+    (if (:units options)
+      (assoc (get options :attrs {}) :units (:units options))
+      (get options :attrs {}))
+    {:service     name
+     :description (get options :desc)
+     :tags        (riemann-tags)
+     :ttl         (let [ttl (get-observer current-observer :period)]
+                    (if ttl (* 3 ttl))) ; some  buffer
+     })
+   (if (number? value) :metric :state)
+   (if (number? value) value   (str value))))
 
 (defn riemann-journal [name value options]
   (let [event (event-from-observation name value options)]
