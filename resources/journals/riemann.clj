@@ -13,10 +13,6 @@
 (def ^{:private true} client-config
   (or (get-config :riemann) {:host "localhost"}))
 
-(case (get client-config :protocol)
-  "udp" (def  ^{:private true} client (riemann/udp-client client-config))
-  (def  ^{:private true} client (riemann/tcp-client client-config)))
-
 (def ^{:private true} request-count (atom 0))
 (def ^{:private true} response-count (atom 0))
 (def ^{:private true} successful-response-count (atom 0))
@@ -26,6 +22,33 @@
 
 (def riemann-default-tags ["bohr"])
 
+(def ^{:private true} client (atom nil))
+(def ^{:private true} client-refresh-period 10)
+(def ^{:private true} client-refresh-pool (mk-pool))
+(def ^{:private true} client-refresh-schedule (atom nil))
+
+(defn- refresh-riemann-client!
+  "Set a new Riemann client."
+  []
+  (log/trace "Refreshing Riemann client")
+  (reset!
+   client
+   (case (get client-config :protocol)
+     "udp" (riemann/udp-client client-config)
+     (riemann/tcp-client client-config))))
+(refresh-riemann-client!)
+
+(defn- setup-client-refresher! []
+  (log/debug "Refreshing Riemann connection every" client-refresh-period "s")
+  (reset!
+   client-refresh-schedule
+   (every
+    (* client-refresh-period 1000)       ; s -> ms
+    refresh-riemann-client!
+    client-refresh-pool)))
+
+(setup-client-refresher!)
+   
 (defn- riemann-tags []
   (get client-config :tags riemann-default-tags))
 
@@ -51,7 +74,7 @@
      responses
      conj
      (riemann/send-event
-      client
+      @client
       event))
     (swap!
      request-count
