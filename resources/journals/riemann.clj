@@ -47,7 +47,7 @@
     refresh-riemann-client!
     client-refresh-pool)))
 
-(setup-client-refresher!)
+;(setup-client-refresher!)
    
 (defn- riemann-tags []
   (get client-config :tags riemann-default-tags))
