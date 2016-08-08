@@ -73,11 +73,7 @@
      matching-process-count
      :desc metric-desc
      :attrs { :name (:name expected-process) :agg "mean"})
-    (if (= 1 matching-process-count)
-      (assoc
-      (first matching-processes)
-      :name
-      (:name expected-process)))))
+    [(:name expected-process) matching-processes]))
 
 (defn- process-procfile-contents [process path]
   (procfile-contents (format "%d/%s" (:pid process) path)))
@@ -93,24 +89,59 @@
    :data.disk.written.cancelled { :desc "Data written to disk then cancelled" :units "B" }
    })
 
-(defn- submit-io [process]
+(defn- combine-process-stats [f processes default-agg]
+  (let [results-per-process
+        (map
+         (fn [process] (f process))
+         processes)]
+    (into
+     {}
+     (map
+      (fn [[canonical-observation-name canonical-observation]]
+        (let [values
+              (map
+               (fn [result]
+                 (:value (canonical-observation-name result)))
+               results-per-process)
+              
+              aggregator
+              (or (:agg (:attrs canonical-observation {}))
+                  default-agg)]
+          [canonical-observation-name
+           (assoc
+            canonical-observation
+            :value
+            (if (= aggregator "last")
+              (if (string? (first values))
+                (first values)
+                (apply + values))
+              (if (empty? values)
+                0.0
+                (/ (apply + values) (count values)))))
+           ]))
+      (first results-per-process)))))
+
+(defn- io [process]
+  (annotate
+   (parse-properties
+    (process-procfile-contents process "io")
+    :converter #(Long/parseLong %)
+    :translation
+    {
+     "syscr"                 :reads
+     "syscw"                 :writes
+     "rchar"                 :data.cache.read
+     "wchar"                 :data.cache.written
+     "read_bytes"            :data.disk.read
+     "write_bytes"           :data.disk.written
+     "cancelled_write_bytes" :data.disk.written.cancelled
+     })
+   io-annotations))
+  
+(defn- submit-io [name processes]
   (submit-many
-   (annotate
-    (parse-properties
-     (process-procfile-contents process "io")
-     :converter #(Long/parseLong %)
-     :translation
-     {
-      "syscr"                 :reads
-      "syscw"                 :writes
-      "rchar"                 :data.cache.read
-      "wchar"                 :data.cache.written
-      "read_bytes"            :data.disk.read
-      "write_bytes"           :data.disk.written
-      "cancelled_write_bytes" :data.disk.written.cancelled
-      })
-    io-annotations)
-   :attrs { :name (:name process) :agg "last" :counter true }))
+   (combine-process-stats io processes "last")
+   :attrs { :name name :agg "last" :counter true }))
 
 (def ^{:private true} stat-annotations
   {
@@ -134,69 +165,72 @@
    :mem.resident          { :desc "Resident memory"   :units "B" :attrs { :agg "mean" }}
    })
 
-(defn- submit-stats [process]
+(defn- stats [process]
+  (annotate
+   ;; You think you'll get it from `man proc`, but no...see
+   ;; http://stackoverflow.com/questions/21773756/proc-pid-stat-file-unrecognizable-output
+   (first
+    (parse-table
+     (process-procfile-contents process "stat")
+     [[nil    identity] ; pid
+      [nil    identity] ; comm
+      [:state identity] ; state
+      [nil    identity] ; ppid
+      [nil    identity] ; pgrp
+      [nil    identity] ; session
+      [nil    identity] ; tty_nr
+      [nil    identity] ; tpgid
+      [nil    identity] ; flags
+      [:faults.minor          :long] ; minflt
+      [:faults.children.minor :long] ; cminflt
+      [:faults.major          :long] ; majflt
+      [:faults.children.major :long] ; cmajflt
+      [:time.user            #(cpu-ticks-to-time (Long/parseLong %) 1)] ; utime
+      [:time.system          #(cpu-ticks-to-time (Long/parseLong %) 1)] ; stime
+      [:time.children.user   #(cpu-ticks-to-time (Long/parseLong %) 1)] ; cutime
+      [:time.children.system #(cpu-ticks-to-time (Long/parseLong %) 1)] ; cstime
+      [:priority :integer] ; priority
+      [:nice     :integer] ; nice
+      [:threads  :long] ; num_threads
+      [nil identity] ; itrealvalue
+      [nil identity] ; starttime
+      [:mem.virtual  :long] ; vsize
+      [:mem.resident #(* page-size (Long/parseLong %))] ; rss
+      [nil identity] ; rsslim
+      [nil identity] ; startcode
+      [nil identity] ; endcode
+      [nil identity] ; startstack
+      [nil identity] ; kstkesp
+      [nil identity] ; kstkeip
+      [nil identity] ; signal
+      [nil identity] ; blocked
+      [nil identity] ; sigignore
+      [nil identity] ; sigcatch
+      [nil identity] ; wchan
+      [nil identity] ; nswap
+      [nil identity] ; cnswap
+      [nil identity] ; exit_signal
+      [nil identity] ; processor
+      [:priority.rt :integer] ; rt_priority
+      [nil identity] ; policy
+      [:time.io_delay       #(cpu-ticks-to-time (Long/parseLong %) 1)] ; delayacct_blkio_ticks
+      [:time.guest          #(cpu-ticks-to-time (Long/parseLong %) 1)] ; guest_time
+      [:time.children.guest #(cpu-ticks-to-time (Long/parseLong %) 1)] ; cguest_time
+      [nil identity] ; start_data
+      [nil identity] ; end_data
+      [nil identity] ; start_brk
+      [nil identity] ; arg_start
+      [nil identity] ; arg_end
+      [nil identity] ; env_start
+      [nil identity] ; env_end
+      [nil identity] ; exit_code
+      ]))
+   stat-annotations))
+  
+(defn- submit-stats [name processes]
   (submit-many
-   (annotate
-    ;; You think you'll get it from `man proc`, but no...see
-    ;; http://stackoverflow.com/questions/21773756/proc-pid-stat-file-unrecognizable-output
-    (first
-     (parse-table
-      (process-procfile-contents process "stat")
-      [[nil    identity] ; pid
-       [nil    identity] ; comm
-       [:state identity] ; state
-       [nil    identity] ; ppid
-       [nil    identity] ; pgrp
-       [nil    identity] ; session
-       [nil    identity] ; tty_nr
-       [nil    identity] ; tpgid
-       [nil    identity] ; flags
-       [:faults.minor          :long] ; minflt
-       [:faults.children.minor :long] ; cminflt
-       [:faults.major          :long] ; majflt
-       [:faults.children.major :long] ; cmajflt
-       [:time.user            #(cpu-ticks-to-time (Long/parseLong %) 1)] ; utime
-       [:time.system          #(cpu-ticks-to-time (Long/parseLong %) 1)] ; stime
-       [:time.children.user   #(cpu-ticks-to-time (Long/parseLong %) 1)] ; cutime
-       [:time.children.system #(cpu-ticks-to-time (Long/parseLong %) 1)] ; cstime
-       [:priority :integer] ; priority
-       [:nice     :integer] ; nice
-       [:threads  :long] ; num_threads
-       [nil identity] ; itrealvalue
-       [nil identity] ; starttime
-       [:mem.virtual  :long] ; vsize
-       [:mem.resident #(* page-size (Long/parseLong %))] ; rss
-       [nil identity] ; rsslim
-       [nil identity] ; startcode
-       [nil identity] ; endcode
-       [nil identity] ; startstack
-       [nil identity] ; kstkesp
-       [nil identity] ; kstkeip
-       [nil identity] ; signal
-       [nil identity] ; blocked
-       [nil identity] ; sigignore
-       [nil identity] ; sigcatch
-       [nil identity] ; wchan
-       [nil identity] ; nswap
-       [nil identity] ; cnswap
-       [nil identity] ; exit_signal
-       [nil identity] ; processor
-       [:priority.rt :integer] ; rt_priority
-       [nil identity] ; policy
-       [:time.io_delay       #(cpu-ticks-to-time (Long/parseLong %) 1)] ; delayacct_blkio_ticks
-       [:time.guest          #(cpu-ticks-to-time (Long/parseLong %) 1)] ; guest_time
-       [:time.children.guest #(cpu-ticks-to-time (Long/parseLong %) 1)] ; cguest_time
-       [nil identity] ; start_data
-       [nil identity] ; end_data
-       [nil identity] ; start_brk
-       [nil identity] ; arg_start
-       [nil identity] ; arg_end
-       [nil identity] ; env_start
-       [nil identity] ; env_end
-       [nil identity] ; exit_code
-       ]))
-    stat-annotations)
-   :attrs { :name (:name process) }))
+   (combine-process-stats stats processes "mean")
+   :attrs { :name name }))
 
 (def ^{:private true} memory-stat-annotations
   {
@@ -205,62 +239,65 @@
    :mem.data  { :desc "Memory used for data and stack"  }
    })
 
-(defn- submit-memory-stats [process]
+(defn- memory-stats [process]
+  (annotate
+   (first
+    (parse-table
+     (process-procfile-contents process "statm")
+     [[nil identity] ; size
+      [nil identity] ; resident
+      [nil identity] ; share
+      [:mem.share #(* (Long/parseLong %) page-size)] ; text
+      [:mem.text  #(* (Long/parseLong %) page-size)] ; lib
+      [:mem.data  #(* (Long/parseLong %) page-size)] ; data
+      [nil identity] ; dt
+      ]))
+   memory-stat-annotations))
+
+(defn- submit-memory-stats [name processes]
   (submit-many
-   (annotate
-    (first
-     (parse-table
-      (process-procfile-contents process "statm")
-      [[nil identity] ; size
-       [nil identity] ; resident
-       [nil identity] ; share
-       [:mem.share #(* (Long/parseLong %) page-size)] ; text
-       [:mem.text  #(* (Long/parseLong %) page-size)] ; lib
-       [:mem.data  #(* (Long/parseLong %) page-size)] ; data
-       [nil identity] ; dt
-       ]))
-    memory-stat-annotations)
+   (combine-process-stats memory-stats processes "mean")
    :units "B"
-   :attrs { :name (:name process) :agg "mean" }))
+   :attrs { :name name :agg "mean" }))
 
 (defn- elapsed-time [process]
   (let [match (re-find #"(?:(\d+)-)?(?:(\d{2}):)?(\d{2}):(\d{2})" (:etime process ""))]
     (if match
-      (+
-       (* (Integer/parseInt (or (match 1) "0")) 86400)
-       (* (Integer/parseInt (or (match 2) "0")) 3600)
-       (* (Integer/parseInt (or (match 3) "0")) 60)
-       (Integer/parseInt (or (match 4) "0")))
-      (do
-        (log/error (format "Could not parse elapsed time of process '%s': %s"
-                           (:name process)
-                           (:etime process)))
-        nil))))
+      {:uptime
+       {:desc "Uptime"
+        :units "s"
+        :value (+
+                (* (Integer/parseInt (or (match 1) "0")) 86400)
+                (* (Integer/parseInt (or (match 2) "0")) 3600)
+                (* (Integer/parseInt (or (match 3) "0")) 60)
+                (Integer/parseInt (or (match 4) "0")))
+        }})))
 
-(defn- submit-elapsed-time [process]
-  (let [time (elapsed-time process)]
-    (if time
-      (submit "uptime"
-              time
-              :desc "Uptime"
-              :units "s"
-              :attrs { :agg "last" :name (:name process)}))))
+(defn- submit-elapsed-time [name processes]
+  (submit-many
+   (combine-process-stats elapsed-time processes "mean")
+   :attrs { :agg "last" :name name }))
 
-(defn- submit-file-count [process]
-  (submit
-   "files"
-   (Integer/parseInt
-    (sh-output
-     (format "ls /proc/%s/fd | wc -l" (:pid process))))
-   :desc "Number of open files"
-   :attrs { :name (:name process) :agg "mean" }))
+(defn- file-count [process]
+  {:files
+   {
+    :desc  "Number of open files"
+    :value (Integer/parseInt
+            (sh-output
+             (format "ls /proc/%s/fd | wc -l" (:pid process))))
+    }})
+  
+(defn- submit-file-count [name processes]
+  (submit-many
+   (combine-process-stats file-count processes "mean")
+   :attrs { :name name :agg "mean" }))
 
-(defn- submit-expected-process-observations [process]
-  (submit-elapsed-time process)
-  (submit-io process)
-  (submit-stats process)
-  (submit-memory-stats process)
-  (submit-file-count process))
+(defn- submit-expected-process-observations [name processes]
+  (submit-elapsed-time name processes)
+  (submit-io name processes)
+  (submit-stats name processes)
+  (submit-memory-stats name processes)
+  (submit-file-count name processes))
 
 (defn- expected-processes []
   (or (get-config :processes.tracked) []))
@@ -272,9 +309,8 @@
          (let [table (process-table)]
            (submit-many (process-counts-by-state table) :attrs { :agg "mean" })
            (doseq [expected-process (expected-processes)]
-             (let [matching-process (submit-expected-process-count table expected-process)]
-               (if (and
-                    (observe-expected-processes?)
-                    matching-process)
+             (let [[name matching-processes] (submit-expected-process-count table expected-process)]
+               (if (and (not (empty? matching-processes))
+                        (observe-expected-processes?))
                  (case-os
-                  "Linux" (submit-expected-process-observations matching-process)))))))
+                  "Linux" (submit-expected-process-observations name matching-processes)))))))
