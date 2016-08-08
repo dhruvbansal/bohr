@@ -1,18 +1,18 @@
 ;;; os.clj
 ;;;
-;;; Defines operating system observers.  These are to be relied upon
-;;; when defining other observers which need to interact with the
-;;; operating system, typically via case statements:
+;;; Defines functions that interrogate the operating system.  These
+;;; are to be relied upon when defining observers which need to
+;;; interact with the operating system, typically via case statements:
 ;;;
-;;;   (case (& :kernel.name)
+;;;   (case-os
 ;;;     "Linux"  (...)
 ;;;     "Darwin" (...)
 ;;;     ...
 
 (ns bohr.dsl.os
   (:require [clojure.tools.logging :as log])
-  (:use bohr.dsl.helpers
-        bohr.observers
+  (:use bohr.observers
+        bohr.dsl.helpers
         bohr.dsl.parsers))
 
 (def kernel-name      (sh-output "uname -s"))

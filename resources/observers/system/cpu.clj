@@ -1,21 +1,3 @@
-(def cpu-clock-tick
-  (Float/parseFloat
-   (sh-output "getconf CLK_TCK")))
-
-(defn- cpu-count-linux []
-  (count
-   (filter
-    #(re-find #"^processor" %)
-    (string/split-lines (procfile-contents "cpuinfo")))))
-
-(defn- cpu-count-mac []
-  (Integer/parseInt (sysctl "hw.ncpu")))
-
-(defn- cpu-count []
-  (case-os
-   "Linux" (cpu-count-linux)
-   "Mac"   (cpu-count-mac)))
-
 (defn- raw-load-average-linux []
   (take
     3
@@ -50,15 +32,10 @@
         names
         [:user :nice :system :idle :iowait :irq :softirq :steal :guest :guest-nice]
 
-        cpus
-        (cpu-count)
-
         times
         (map-indexed
          (fn [index name]
-           (/ 
-            (Long/parseLong (nth strings (+ index 1)))
-            (* cpus cpu-clock-tick)))
+           (cpu-ticks-to-time (Long/parseLong (nth strings (+ index 1)))))
          names)]
     (zipmap names times)))
 
