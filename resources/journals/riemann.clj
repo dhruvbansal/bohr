@@ -88,17 +88,17 @@
 
 (defn- handle-responses! []
   (while (not (empty? @responses))
-    (let [response-ref (first @responses)
-          response     (deref response-ref  5000 ::timeout)
-          response-error (get response :error)]
-      (log/trace "Handling response from Riemann" response)
-      (swap! response-count inc)
-      (if response-error
-        (do
-          (log/error "Could not publish to Riemann:" response-error)
-          (swap! failed-response-count inc))
-        (swap! successful-response-count inc)))
-    (swap! responses subvec 1)))
+    (let [response-ref (first @responses)]
+      (swap! responses subvec 1)
+      (let [response     (deref response-ref  5000 ::timeout)
+            response-error (get response :error)]
+        (log/trace "Handling response from Riemann" response)
+        (swap! response-count inc)
+        (if response-error
+          (do
+            (log/error "Could not publish to Riemann:" response-error)
+            (swap! failed-response-count inc))
+          (swap! successful-response-count inc))))))
 
 (defn- handled-all-responses? []
   (empty? @responses))
