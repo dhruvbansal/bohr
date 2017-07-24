@@ -1,4 +1,4 @@
-(defproject bohr "0.2.1"
+(defproject bohr "0.2.2"
   :description "Lightweight, extensible, metrics gathering and forwarding framework."
   :url "http://github.com/dhruvbansal/bohr"
   :license {:name "Apache Public License (2.0)"
