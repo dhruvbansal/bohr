@@ -23,7 +23,7 @@
 (def riemann-default-tags ["bohr"])
 
 (def ^{:private true} client (atom nil))
-(def ^{:private true} client-refresh-period 10)
+(def ^{:private true} client-refresh-period 10) ;; seconds
 (def ^{:private true} client-refresh-pool (mk-pool))
 (def ^{:private true} client-refresh-schedule (atom nil))
 
