@@ -64,7 +64,7 @@
     (load-script! input-path)))
 
 (defn- uberjar?
-  "Is Bohr currently running from an lein uberjar?"
+  "Is Bohr currently running from a lein uberjar?"
   ;; If the 'resources/observers' directory exists on disk, then we
   ;; are NOT running from within an uberjar.
   []

@@ -4,9 +4,9 @@
   submits his results to journals, forever, till he dies.  Silly guy.
   
   The =bohr= program is a single-executable file that can be run on
-  any host to collect system (CPU, memory, disk, network, &c.)  and
-  service (filesystem, database, webserver, &c.) data and forward it
-  to downstream data stores and/or other services.
+  any host to collect system (CPU, memory, disk, filesystem, network,
+  &c.)  and service (database, webserver, end-user application &c.)
+  data and forward it to downstream data stores and/or other services.
   
   Jump to:
   
@@ -20,21 +20,24 @@
     
   Tools similar to Bohr include:
   
-  - [[http://metrics.dropwizard.io/metrics][metrics]] :: Very similar, more mature, but written in Java
-  - [[https://github.com/influxdata/telegraf][telegraf]] :: Very similar but written in Go
-  - [[https://collectd.org/][collectd]] :: Similar aims but greater scope, old ecosystem
-  - [[https://github.com/riemann/riemann-tools][riemann-tools]] :: Similar but not extensible at runtime and specific to Riemann
+  - [[http://metrics.dropwizard.io/metrics][metrics]]
+  - [[https://github.com/influxdata/telegraf][telegraf]]
+  - [[https://collectd.org/][collectd]]
+  - [[https://github.com/riemann/riemann-tools][riemann-tools]]
 		     
 ** Design
-   
-*** Scope
-    
-    Bohr makes observations and publishes them downstream.  It *does
-    not* store, downsample, plot/graph, index, alert on, or analyze
-    any of its observations.
 
-    Bohr processes on different hosts do not need to communicate with
-    each other in any way.
+   The fundamental concept in Bohr is an *observation*: a measurement
+   of some aspect of the environment.  Measurements always have a host
+   and a time.  They are typically (but not necessarily) quantitative
+   in nature and can be decorated with various metadata.
+   
+   Bohr *does not* store, downsample, plot/graph, index, alert on, or
+   analyze any of its observations.  It merely publishes them to
+   downstream services (called /journals/) which you configure.
+
+   Running Bohr processes on different hosts do not need to
+   communicate with each other in any way.
 		  
 *** Design Goals    
     
@@ -44,8 +47,8 @@
                    fails, everything downstream of it fails, so Bohr
                    tries to keep observing, no matter what.
 		   
-  - Transparency :: It's easy to tell what observations Bohr is making
-                    for any system.
+  - Transparency :: It's always easy to ask Bohr what observations it
+                    makes based on the current configuration.
 		    
   - Modularity :: Bohr lets you include and exclude observations and
                   journals with fine-grained control.
@@ -56,8 +59,11 @@
 		     
   - Efficiency :: Bohr consumes minimal resources as it runs.
 		  
-  - Portability :: Bohr runs on many different systems and uses
-                   system-specific methods to make its observations.
+  - Portability :: Bohr runs on any system which can run Java.
+
+  - Adaptability :: Bohr adapt the observations it makes appropriately
+                    for the environment it's running within (e.g. - OS
+                    X vs. Linux).
 		   
   - Simplicity :: Bohr is packaged as a single, self-contained,
                   executable Java jar and auto-discovers common
@@ -84,7 +90,7 @@
 
    1) Observations are data.
    2) Journals are code which publish data to downstream services.
-   2) Observers are cod which make observations and submit them to journals.
+   2) Observers are code which make observations and submit them to journals.
 
    Using Bohr effectively requires:
    
@@ -170,7 +176,7 @@
   :END:
    
    While running, Bohr does not daemonize itself or manage any of its
-   output.  It relies on system services such as upstart and
+   output.  You should configure services such as upstart and
    logrotate.  Example configuration files for such services are
    provided in the [[file:examples/][examples]] directory.
    
@@ -357,14 +363,7 @@
   journal, Bohr knows how to publish to the following services:
   
   - [[http://riemann.io/][Riemann]]
-  - [[https://influxdata.com/][InfluxDB]] (coming soon)
-  - [[https://www.elastic.co/][ElasticSearch]] (coming soon)
-  - [[https://www.mongodb.org/][MongoDB]] (coming soon)
-  - [[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol][HTTP(S)]] (coming soon)
-  - [[https://en.wikipedia.org/wiki/Syslog][syslog]] (coming soon)
-  - [[http://graphite.wikidot.com/][Graphite]] (coming soon)
-  - [[https://www.elastic.co/products/logstash][Logstash]] (coming soon)
-  - a local file (coming soon)
+  - Many more planned...
     
 * Customizing
   :PROPERTIES:

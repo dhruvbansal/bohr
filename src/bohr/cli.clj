@@ -49,16 +49,16 @@
   [options-summary]
   (->> ["usage: bohr [OPTIONS] [SCRIPT ...]
 
-Bohr is a scientist who observes your system and takes many
-readings. He periodically writes reports which he submits to several
-journals.  These journals write them to data stores or other services.
+Bohr is a system monitoring tool.  Bohr makes observations of your
+system and periodically submits them to journals which write them to
+downstream data stores or other services.
 
 When run without any arguments
 
   $ bohr
 
 Bohr will observe a standard set of system metrics (CPU, memory, disk,
-&c.) and summarize his findings in a table pretty-printed to console.
+&c.) and summarize the results in a table pretty-printed to console.
 
 When run with the --once (or -o) flag
 
