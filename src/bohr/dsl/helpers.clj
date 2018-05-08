@@ -4,7 +4,8 @@
 (ns bohr.dsl.helpers
   (:require [clojure.string  :as string]
             [clojure.tools.logging :as log]
-            [clojure.java.io :as io])
+            [clojure.java.io :as io]
+            [clj-http.client :as httpclient])
   (:use clojure.java.shell
         bohr.observers
         bohr.journals))
@@ -57,3 +58,13 @@
               :attrs (get annotation :attrs)
               }]))
     (seq values))))
+
+(defn http-get
+  "Returns the result of an HTTP GET"
+  [url]
+  (get (httpclient/get url) :body))
+
+(defn http-get-json
+  "Returns the result of an HTTP GET as JSON"
+  [url]
+  (get (httpclient/get url {:as :json}) :body ))
