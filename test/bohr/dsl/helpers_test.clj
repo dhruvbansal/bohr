@@ -18,3 +18,20 @@
 				(get (http-get-json "https://jsonplaceholder.typicode.com/posts/1") :title)
 				"sunt aut facere repellat provident occaecati excepturi optio reprehenderit"
 				))))
+
+
+(deftest http-post-test
+	(testing "HTTP POST should POST json to a URL and return the string"
+		(is
+			(= 
+				(http-post "https://jsonplaceholder.typicode.com/posts" {:title "foo" :body "bar" :userId 1} )
+				"{\n  \"title\": \"foo\",\n  \"body\": \"bar\",\n  \"userId\": 1,\n  \"id\": 101\n}" 
+				))))
+
+(deftest http-post-json-test
+	(testing "HTTP POST should POST json to a URL and return json"
+		(is
+			(= 
+				(get (http-post-json "https://jsonplaceholder.typicode.com/posts" {:title "foo" :body "bar" :userId 1} ) :title)
+				"foo"
+				))))

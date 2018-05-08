@@ -68,3 +68,13 @@
   "Returns the result of an HTTP GET as JSON"
   [url]
   (get (httpclient/get url {:as :json}) :body ))
+
+(defn http-post
+  "Returns the result of an HTTP POST"
+  [url jsonbody]
+  (get (httpclient/post url {:form-params jsonbody :content-type :json}) :body))
+
+(defn http-post-json
+  "Returns the result of an HTTP POST as JSON"
+  [url jsonbody]
+  (get (httpclient/post url {:form-params jsonbody :content-type :json :as :json}) :body ))
