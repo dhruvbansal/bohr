@@ -1,4 +1,4 @@
-(defproject bohr "0.2.3"
+(defproject bohr "0.2.4"
   :description "Lightweight, extensible, metrics gathering and forwarding framework."
   :url "http://github.com/dhruvbansal/bohr"
   :license {:name "Apache Public License (2.0)"
@@ -12,7 +12,7 @@
                  [clj-logging-config        "1.9.3"  ]
                  [clj-glob "1.0.0"]
                  [table "0.5.0"]
-                 [riemann-clojure-client "0.4.2"]
+                 [riemann-clojure-client "0.5.0"]
                  [clj-yaml "0.4.0"]
                  [clj-http "3.9.0"]
                  [cheshire "5.8.0"]
